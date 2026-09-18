@@ -1,10 +1,11 @@
-import {createState,addFood,shock,advance,status,avoidsSugar,canAssociate,clearMemory,WIDTH,HEIGHT} from './model.js?v=4';
+import {createState,addFood,shock,advance,status,avoidsSugar,canAssociate,clearMemory,WIDTH,HEIGHT} from './model.js?v=5';
 import {TasteCircuit} from './neural.js?v=3';
+import {MushroomBody} from './learning.js?v=5';
 const $=id=>document.getElementById(id);
 const canvas=$('arena'),ctx=canvas.getContext('2d');
 const flyImage=new Image();flyImage.src='assets/fly-walk.png?v=2';
 const sugarImage=new Image();sugarImage.src='assets/sugar.png';
-let s=createState(),last=null,lastPaint=0,eventsSignature='',power=1,trail=[],neuralData=null,neuralError=false;
+let s=createState(),last=null,lastPaint=0,eventsSignature='',power=1,trail=[],neuralData=null,learningData=null,neuralError=false;
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const timeText=t=>`${String(Math.floor(t/60)).padStart(2,'0')}:${String(Math.floor(t%60)).padStart(2,'0')}`;
 
@@ -56,11 +57,19 @@ function draw(){
 }
 function refresh(){
   $('clock').textContent=timeText(s.time);$('state-label').textContent=neuralData?status(s):neuralError?'Не удалось загрузить нейронные данные':'Загрузка нейронной цепи…';
-  $('memory').value=s.sugarAversion*100;
-  $('memory-value').textContent=`${Math.round(s.sugarAversion*100)}/100`;
-  $('memory-note').textContent=avoidsSugar(s)?'Избегает сахара; память постепенно ослабевает':s.sugarAversion>.01?'Память ослабла — снова готова есть':'Связь сахара с ударом ещё не выучена';
-  $('pairing-note').textContent=!s.alive?'Опыт завершён':s.paused?'Опыт на паузе':canAssociate(s)?'Сахар недавно ощущался: удар сейчас сформирует связь':'Для обучения дождись контакта с сахаром и нажми «Удар током»';
-  $('clear-memory').disabled=!neuralData||!s.alive||s.paused||s.sugarAversion===0;
+  const memory=s.learning?.snapshot();
+  $('memory').value=(memory?.cueSynapticDepression??0)*100;
+  $('memory-value').textContent=`${Math.round((memory?.cueSynapticDepression??0)*100)}%`;
+  $('memory-note').textContent='Ослабление связей активируемых сахаром KC → MBON; память хранится в весах';
+  $('pairing-note').textContent=!s.alive?'Опыт завершён':s.paused?'Опыт на паузе':canAssociate(s)?'Активен след KC: импульс PPL1 может изменить синапсы':'Предложи сахар и подай слабый импульс при приближении или контакте';
+  $('clear-memory').disabled=!neuralData||!s.alive||s.paused||!memory?.changedConnections;
+  $('freeze-plasticity').disabled=!neuralData||!s.alive||s.paused;
+  $('silence-dan').disabled=!neuralData||!s.alive||s.paused;
+  $('kc-activity').textContent=memory?.activeKCs??0;
+  $('dan-activity').textContent=(memory?.dopamineActivity??0).toFixed(2);
+  $('mbon-activity').textContent=(memory?.outputActivity??0).toFixed(2);
+  $('mbon-reference').textContent=(memory?.referenceActivity??0).toFixed(2);
+  $('changed-synapses').textContent=memory?.changedConnections??0;
   document.querySelector('.chamber').classList.toggle('shocked',s.alive&&s.time<s.shockUntil);
   $('live-dot').style.background=!s.alive?'#f47c80':s.paused?'#94a5a7':s.stress>70?'#ffa46b':'#abecd4';
   for(const name of ['pleasure','stress','health']){
@@ -94,7 +103,7 @@ function refresh(){
     }));$('event-count').textContent=`${String(s.events.length).padStart(2,'0')} В ЖУРНАЛЕ`;
   }
 }
-function reset(){s=createState(neuralData?new TasteCircuit(neuralData):null);$('silence-mn9').checked=false;last=null;trail=[];eventsSignature='';refresh();draw();}
+function reset(){s=createState(neuralData?new TasteCircuit(neuralData):null,learningData?new MushroomBody(learningData):null);$('silence-mn9').checked=false;$('freeze-plasticity').checked=false;$('silence-dan').checked=false;last=null;trail=[];eventsSignature='';refresh();draw();}
 function feed(x=s.x+Math.cos(s.angle)*190,y=s.y+Math.sin(s.angle)*190){if(!neuralData)return false;const ok=addFood(s,x,y);refresh();draw();return ok;}
 function applyShock(){const ok=shock(s,power);refresh();draw();return ok;}
 $('feed').addEventListener('click',()=>feed());
@@ -106,6 +115,8 @@ $('intensity').addEventListener('input',e=>{
 $('pause').addEventListener('click',()=>{s.paused=!s.paused;last=null;refresh();draw();});
 $('reset').addEventListener('click',reset);$('restart-overlay').addEventListener('click',reset);
 $('clear-memory').addEventListener('click',()=>{clearMemory(s);refresh();draw();});
+$('freeze-plasticity').addEventListener('change',e=>{if(s.learning)s.learning.plasticityEnabled=!e.target.checked;refresh();});
+$('silence-dan').addEventListener('change',e=>{if(s.learning)s.learning.danSilenced=e.target.checked;refresh();});
 $('silence-mn9').addEventListener('change',e=>{if(s.brain)s.brain.silenced=e.target.checked;refresh();});
 canvas.addEventListener('pointerdown',e=>{
   const rect=canvas.getBoundingClientRect();feed((e.clientX-rect.left)/rect.width*WIDTH,(e.clientY-rect.top)/rect.height*HEIGHT);
@@ -120,18 +131,20 @@ function frame(now){
   draw();if(now-lastPaint>100){refresh();lastPaint=now;}requestAnimationFrame(frame);
 }
 refresh();requestAnimationFrame(frame);
-fetch('data/taste-circuit.json?v=3').then(response=>{
+Promise.all(['data/taste-circuit.json?v=3','data/learning-circuit.json?v=5'].map(url=>fetch(url).then(response=>{
   if(!response.ok)throw new Error('Neural data unavailable');return response.json();
-}).then(data=>{
+}))).then(([data,learning])=>{
   if(data.format!==1||data.neurons.length!==447||data.edges.length!==24403)throw new Error('Unexpected circuit data');
-  neuralData=data;reset();
+  if(learning.format!==1||learning.neurons.length!==910||learning.edges.length!==3287)throw new Error('Unexpected learning circuit');
+  // Validate construction before enabling the application.
+  new MushroomBody(learning);learningData=learning;neuralData=data;reset();
 }).catch(()=>{neuralError=true;refresh();});
 
 // Optional WebMCP shares exactly the actions and state of the visible controls.
 const context=document.modelContext;
 if(context?.registerTool){
   const lifecycle=new AbortController();
-  const snapshot=()=>({alive:s.alive,paused:s.paused,pleasure:s.pleasure,stress:s.stress,health:s.health,foodPortions:s.foods.length,sugarAversion:s.sugarAversion,pairedShocks:s.pairedShocks,avoidsSugar:avoidsSugar(s),status:status(s),neural:s.brain?.snapshot()??null});
+  const snapshot=()=>({alive:s.alive,paused:s.paused,pleasure:s.pleasure,stress:s.stress,health:s.health,foodPortions:s.foods.length,learning:s.learning?.snapshot()??null,avoidsSugar:avoidsSugar(s),status:status(s),neural:s.brain?.snapshot()??null});
   const register=tool=>{try{Promise.resolve(context.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}};
   register({name:'read_fly_state',description:'Read the current fictional fly state.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute:()=>snapshot()});
   register({name:'apply_fly_action',description:'Add food, apply a fictional shock, pause, resume, or reset the experiment.',inputSchema:{type:'object',properties:{action:{type:'string',enum:['food','shock','pause','resume','reset']},power:{type:'integer',minimum:1,maximum:3}},required:['action'],additionalProperties:false},annotations:{readOnlyHint:false},execute:input=>{

@@ -1,0 +1,116 @@
+Virtual Fly Lab v0.5 — connectome-constrained synaptic learning
+
+WHAT IS IMPLEMENTED
+An additional, deliberately reduced rate-neuron model of the left mushroom-body
+alpha2/alpha3 motif. It contains 905 KCab Kenyon cells, 3 MBONs (one MBON18 and
+two MBON14), and 2 PPL1 DANs (PPL105 and PPL106): 910 annotated FlyWire neurons.
+There are 3,287 selected anatomical directed edges, representing 15,062 synapses.
+Of these, 2,575 KC->MBON edges have individual plastic efficacy multipliers.
+The remaining DAN->KC/MBON edges provide anatomical projection evidence. We do
+not simulate their fast synaptic currents: dopamine acts as a compartmental
+modulator. Matching DAN->MBON projection evidence is required in the code.
+Recurrent edges, other compartments, the other hemisphere and upstream/downstream
+pathways are omitted. This is a selected motif, not the complete mushroom body.
+
+DATA AND REPRODUCIBILITY
+Anatomical counts: FlyWire FAFB v630 distributed by Shiu et al.
+https://github.com/philshiu/Drosophila_brain_model
+Commit 91bdd1e7dcf193f3e7ca5a8933497fcef63b7960
+Annotations: Schlegel et al., flyconnectome/flywire_annotations v1.1.0
+https://github.com/flyconnectome/flywire_annotations/tree/df6bb136f5b3d91c3992df4e8de2642329e2a384
+Commit df6bb136f5b3d91c3992df4e8de2642329e2a384
+Each cell retains its exact root ID as a string, annotated type, side and
+transmitter. Every exported edge retains its unmodified integer synapse count.
+Extraction selects left KCab cells connected to MBON14/18, plus PPL105/106.
+The JSON records source URLs and SHA-256 checksums; the extraction script checks
+them before reading. No anatomical edges or neuron identities are invented.
+Run: uv run --with pyarrow==23.0.1 python web/scripts/extract-learning-circuit.py
+Raw source caches are not published. The derived graph is learning-circuit.json.
+
+SCIENTIFIC MOTIVATION, NOT AN EXACT REPRODUCTION
+Masek et al. (2015), A dopamine-modulated neural circuit regulating aversive
+taste memory in Drosophila: https://pubmed.ncbi.nlm.nih.gov/25981787/
+This study motivates the involvement of alpha-lobe KCs, PPL1 and MBONs in taste
+memory. Its taste protocol paired fructose with quinine or manipulated PPL1;
+it did NOT validate our virtual electrical stimulus, sensory encoding, timing,
+learning coefficients or free-walking avoidance decoder.
+Li et al. (2020), The connectome of the adult Drosophila mushroom body provides
+insights into function: https://elifesciences.org/articles/62576
+This provides type/compartment mapping: PPL105 alpha'2alpha2, PPL106 alpha3,
+MBON18 alpha2sc, MBON14 alpha3, and motivates compartment-specific plasticity.
+We model only the alpha2 component of PPL105 modulation. We use the same simple
+depression rule in both compartments; biological differences and stages of
+short-/long-term consolidation are not reproduced.
+
+SENSORY AND REINFORCEMENT ENCODING — EXPLICIT ASSUMPTIONS
+The arena presents cue 0 whenever the nearest sugar is within 180 canvas units,
+including during escape. This is an abstract recognition signal, NOT a claim
+that sugar has an odor or that a verified taste/vision pathway was reconstructed.
+Sort KC IDs by 32-bit FNV-1a hash and activate the first 10% (90 cells) for cue 0.
+The next 90 cells encode a disjoint diagnostic cue 1 used in software tests.
+These ensembles are synthetic, not experimentally identified sugar-responsive
+KCs. Their disjointness makes the cue-specificity control deliberately simple.
+Shock drives BOTH selected PPL1 neurons directly for 0.4 s at a target normalized
+activity of 1, 1.5, or 2. The electrical sensory pathway is not reconstructed.
+No hardcoded sugar-shock pairing boolean changes weights: current KC traces
+and DAN activity determine each synaptic update. Recent KC activity can therefore
+be reinforced after the cue disappears; this is a decaying eligibility trace.
+
+DYNAMICS — ALL NUMERICAL PARAMETERS CHOSEN FOR THIS DEMONSTRATION
+Integration grid dt=0.005 s. Rates are normalized relative units, not measured Hz
+and not spikes. First-order relaxation uses exact exponential updates:
+  KC time constant: 0.05 s; DAN: 0.1 s; MBON: 0.08 s.
+  KC eligibility e_i <- max(r_i, e_i * exp(-dt/1.5 s)).
+Each real KC->MBON edge has immutable anatomical count c_ij and a learned
+efficacy q_ij, initialized to 1. During plasticity:
+  q_ij <- max(0.05, q_ij * exp(-4 * e_i * d_compartment * dt)).
+The dopamine factor is the mean rate of compartment-matched DANs with an
+observed projection to that MBON. This is a phenomenological LTD rule, not a
+fitted molecular model or a claim that counts measure conductance.
+MBON drive is sum_i(c_ij*q_ij*r_i) / sum_{i in cue0}(c_ij).
+This count-based normalization sets the naive cue-0 steady response to 1.
+Counterfactual reference output uses the same KC rates and MBON dynamics with
+all q=1; it is an analysis instrument, not a second anatomical neuron population.
+The displayed memory percentage is count-weighted depression of cue-0 edges.
+The changed-edge counter uses q<0.999. Neither display controls behavior.
+
+BEHAVIORAL DECODER — EXPLICIT ASSUMPTION
+When mean reference output >0.05, suppression is 1 - mean(MBON)/mean(reference),
+clamped to [0,1]; otherwise suppression is zero. Suppression >=0.35 prevents
+sugar seeking/consumption and steers the agent away from nearby sugar.
+Thus the behavior depends on the response of the plastic network. This relative
+decoder and its threshold are application choices, not measured motor circuitry.
+The original 447-neuron LIF taste circuit remains unchanged and still gates
+consumption through MN9. The two modules receive separate surrogate inputs;
+there is no claim of a reconstructed anatomical link between those modules.
+Motor movement, shock escape, pleasure, stress, health and death remain game
+rules. Displayed PPL1 activity is unrelated to the fictional pleasure meter.
+
+MEMORY AND CONTROLS
+No automatic forgetting or weight recovery is currently modeled. In-memory
+weights persist until reset or page reload. Pausing stops all neural updates.
+Blocking plasticity prevents new weight changes but preserves learned weights.
+Silencing PPL1 clamps the selected DAN rates to zero; old memory remains.
+Restoring weights sets q=1 and clears rates, traces and reinforcement in the
+learning module. Health, stress and the original taste circuit remain intact.
+Full experiment reset restores all state and disables the two control blocks.
+
+VALIDATION AND LIMITS
+Automated tests cover exact graph counts/types, compartment matching, paired
+versus cue-only/shock-only/delayed inputs, DAN silencing, plasticity blockade,
+cue specificity, memory after activity has decayed, deterministic integration,
+weight-transfer recall, and erasure by restoring weights. Arena tests establish
+avoidance and feeding recovery through the model and actual UI event handlers.
+These are causal SOFTWARE controls. They do not validate against measured fly
+behavior, establish realistic retention times, or reproduce a published model.
+The small network was chosen to demonstrate a mechanism and is not a complete
+digital brain. Direct plasticity in the original Shiu taste model is not claimed.
+
+ATTRIBUTION AND DATA TERMS
+Credit: FlyWire Consortium, Dorkenwald et al. for reconstruction; Schlegel et al.
+for annotations and cell typing; Shiu et al. for the distributed connectivity;
+Masek et al. and Li et al. for the scientific motivation and compartment mapping.
+Browser model and selection are adaptations by Virtual Fly Lab, without author
+endorsement. SHIU-LICENSE.txt retains the upstream MIT code license.
+FlyWire anatomical-data terms are separate: https://flywire.ai/guidelines
+Treat this educational data derivative as noncommercial (CC BY-NC 4.0).

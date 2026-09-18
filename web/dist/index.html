@@ -6,10 +6,10 @@
   <title>Virtual Fly Lab — живая лаборатория</title>
   <meta name="description" content="Наблюдайте за виртуальной мухой: давайте еду, меняйте стимулы и следите за удовольствием, стрессом и здоровьем.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%2310191c'/%3E%3Ctext x='7' y='29' font-size='26' fill='%239ee5d1'%3EF%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
-  <header class="topbar"><a class="brand" href="./"><span class="brand-mark">F<span>↗</span></span><span>Virtual Fly <b>Lab</b><small>ИНТЕРАКТИВНАЯ ЛАБОРАТОРИЯ</small></span></a><span class="model-badge">FlyWire · 447 нейронов <span>v0.4</span></span></header>
+  <header class="topbar"><a class="brand" href="./"><span class="brand-mark">F<span>↗</span></span><span>Virtual Fly <b>Lab</b><small>ИНТЕРАКТИВНАЯ ЛАБОРАТОРИЯ</small></span></a><span class="model-badge">FlyWire · две цепи <span>v0.5</span></span></header>
   <main>
     <div class="heading"><div><div class="eyebrow">ЭКСПЕРИМЕНТ / 001</div><h1>Муха под наблюдением</h1></div><p>Еда, удовольствие и стресс.<br class="desktop"> Как меняется её поведение?</p></div>
     <div class="workspace">
@@ -30,18 +30,35 @@
         <div class="metric health"><div><label for="health">Здоровье</label><output id="health-value">100<span>/100</span></output></div><progress id="health" max="100" value="100"></progress><small>При нуле опыт заканчивается</small></div>
         <div class="actions"><h2>Воздействия</h2><button id="feed" class="primary"><span>＋ Дать сахар</span><span class="button-note">Награда</span></button><p>Необученная муха подходит к сахару. После сочетания сахара с ударом она начинает избегать еды.</p>
           <div class="intensity"><label for="intensity">Сила импульса</label><output id="intensity-value">Слабый</output></div><input id="intensity" type="range" min="1" max="3" step="1" value="1" aria-valuetext="Слабый"><div class="range-labels"><span>Слабый</span><span>Сильный</span></div>
-          <button id="shock" class="shock-button"><span>ϟ Удар током</span><span class="button-note">Стресс</span></button><p>Прерывает питание и вызывает бегство. При контакте с сахаром формирует память об опасности. Повторные импульсы могут быть смертельны.</p>
+          <button id="shock" class="shock-button"><span>ϟ Удар током</span><span class="button-note">Стресс</span></button><p>Прерывает питание и вызывает бегство. Условно активирует PPL1: при активности KC могут измениться синапсы. Повторные импульсы могут быть смертельны.</p>
         </div><button id="reset" class="reset-button">↻ Начать заново</button>
       </aside>
     </div>
-    <section class="learning-panel" aria-label="Упрощённое обучение избеганию сахара">
-      <div class="eyebrow">УПРОЩЁННАЯ МОДЕЛЬ ОБУЧЕНИЯ</div>
-      <h2>Память: сахар → удар</h2>
-      <div class="metric memory"><div><label for="memory">Связь с опасностью</label><output id="memory-value">0/100</output></div><progress id="memory" max="100" value="0"></progress><small id="memory-note">Связь сахара с ударом ещё не выучена</small></div>
-      <p id="pairing-note" role="status">Для обучения дождись контакта с сахаром и нажми «Удар током»</p>
-      <p>Дай сахар → дождись «Пробует сахар» или «Ест сахар» → нажми слабый импульс → предложи новую порцию. При памяти от 35/100 муха избегает любого сахара. Удар вдали от еды эту связь не создаёт.</p>
-      <button id="clear-memory" class="quiet">Сбросить только память</button>
-      <p>Память задана отдельным правилом и постепенно ослабевает. Это не обучение нейронов FlyWire и не доказательство поведения живой мухи. Удар связывается с сахаром при контакте или в течение 1,5 секунды после него. Сброс памяти сохраняет стресс и здоровье; «Начать заново» сбрасывает весь опыт.</p>
+    <section class="learning-panel" aria-label="Синаптическое обучение в модели грибовидного тела">
+      <div class="eyebrow">FLYWIRE · 910 НЕЙРОНОВ · МОДЕЛЬ ПЛАСТИЧНОСТИ</div>
+      <h2>Память в синапсах KC → MBON</h2>
+      <p>905 клеток Кеньона (KC), 2 нейрона подкрепления PPL1 и 3 выходных нейрона MBON. Анатомические связи взяты из FlyWire; 2 575 соединений KC → MBON могут изменять свою эффективность при обучении.</p>
+      <div class="metric memory"><div><label for="memory">Ослабление связей сигнала сахара</label><output id="memory-value">0%</output></div><progress id="memory" max="100" value="0"></progress><small id="memory-note">Память хранится в синаптических весах</small></div>
+      <div class="learning-stages">
+        <div><small>АКТИВНЫЕ KC</small><strong id="kc-activity">0</strong><span>из 905 клеток</span></div>
+        <div><small>АКТИВНОСТЬ PPL1</small><strong id="dan-activity">0.00</strong><span>сигнал подкрепления, отн. ед.</span></div>
+        <div><small>ОТВЕТ MBON</small><strong id="mbon-activity">0.00</strong><span>без пластичности: <b id="mbon-reference">0.00</b> · отн. ед.</span></div>
+        <div><small>ИЗМЕНЁННЫЕ СОЕДИНЕНИЯ</small><strong id="changed-synapses">0</strong><span>из 2 575 связей KC → MBON</span></div>
+      </div>
+      <p id="pairing-note" role="status">Предложи сахар и подай слабый импульс при приближении или контакте</p>
+      <p>Дай сахар → дождись приближения мухи → подай слабый импульс → предложи новую порцию. При снижении ответа MBON на 35% модель начинает избегать сахара. Веса сохраняются до сброса или перезагрузки страницы.</p>
+      <div class="learning-controls">
+        <label class="neural-switch"><input type="checkbox" id="freeze-plasticity"> Заблокировать изменение весов</label>
+        <label class="neural-switch"><input type="checkbox" id="silence-dan"> Отключить PPL1 — убрать сигнал подкрепления</label>
+      </div>
+      <p>Для контрольного опыта сначала восстанови веса, включи одну блокировку и повтори обучение. Уже выученная память от блокировки не стирается.</p>
+      <button id="clear-memory" class="quiet">Восстановить исходные веса</button>
+      <details><summary>Что здесь биологическое, а что принято в модели?</summary>
+        <p>Реальные идентификаторы, типы нейронов и число синапсов: FlyWire v630. Выбраны левые модули α2/α3. Используются частотные модели нейронов и дофамин-зависимое ослабление KC → MBON. Это биологически мотивированный механизм, но параметры не подогнаны к опытам на живых мухах.</p>
+        <p>Близкий сахар условно активирует фиксированные 90 клеток Кеньона; реальный путь от органов чувств к ним не восстановлен. Кнопка тока условно стимулирует PPL1. Исследование вкусовой памяти использовало горькое подкрепление и активацию PPL1, а не этот виртуальный протокол. Перевод ответа MBON в избегание — наше допущение.</p>
+        <p>«Без пластичности» — вычислительный контроль с исходными весами, не измерение живой мухи. Сброс восстанавливает веса и очищает текущую активность модуля памяти, сохраняя здоровье, стресс и вкусовую цепь.</p>
+        <p><a href="https://pubmed.ncbi.nlm.nih.gov/25981787/" target="_blank" rel="noreferrer">Вкусовая память ↗</a> · <a href="https://elifesciences.org/articles/62576" target="_blank" rel="noreferrer">Организация грибовидного тела ↗</a> · <a href="data/LEARNING-NOTES.txt" target="_blank" rel="noreferrer">Формулы, допущения и источники ↗</a> · <a href="data/learning-circuit.json" target="_blank" rel="noreferrer">Нейроны и связи ↗</a></p>
+      </details>
     </section>
     <section class="neural-panel" aria-label="Нейронная цепь реакции на сахар">
       <div class="neural-heading"><div><div class="eyebrow">РЕАЛЬНЫЕ СВЯЗИ · МОДЕЛЬ АКТИВНОСТИ</div><h2>Нейронная цепь вкуса</h2></div><span id="neural-state" role="status">Загрузка данных…</span></div>
@@ -51,10 +68,10 @@
         <div><small>ВЫХОД MN9 · <span id="mn9-voltage">−52.0 мВ</span></small><strong id="output-spikes">0</strong><span>импульсов на выходе</span></div>
       </div>
       <label class="neural-switch"><input type="checkbox" id="silence-mn9"> Отключить MN9 — проверить, сможет ли муха съесть сахар</label>
-      <details><summary>Что здесь взято из реальной мухи?</summary><p>Идентификаторы нейронов и число связей взяты из FlyWire v630, опубликованного с моделью Shiu и соавторов. Мы выделили небольшую часть сети для реакции на вкус сахара. Активность рассчитывается моделью LIF, а не записывается из живого мозга.</p><p>Сахар стимулирует сеть только при контакте. Импульсы MN9 разрешают поедание; это наш упрощённый перевод активности в действие. Поиск сахара, ходьба, дофаминовая шкала, стресс и смерть пока заданы правилами — эта цепь ими не управляет.</p><p><a href="https://doi.org/10.1038/s41586-024-07763-9" target="_blank" rel="noreferrer">Исследование ↗</a> · <a href="data/taste-circuit.json" target="_blank" rel="noreferrer">Данные и происхождение ↗</a> · <a href="data/MODEL-NOTES.txt" target="_blank" rel="noreferrer">Допущения модели ↗</a></p></details>
+      <details><summary>Что здесь взято из реальной мухи?</summary><p>Идентификаторы нейронов и число связей взяты из FlyWire v630, опубликованного с моделью Shiu и соавторов. Мы выделили небольшую часть сети для реакции на вкус сахара. Активность рассчитывается моделью LIF, а не записывается из живого мозга.</p><p>Сахар стимулирует сеть только при контакте. Импульсы MN9 разрешают поедание; это наш упрощённый перевод активности в действие. Избегание связано с отдельным модулем пластичности KC → MBON. Поиск сахара, ходьба, дофаминовая шкала, стресс и смерть заданы правилами.</p><p><a href="https://doi.org/10.1038/s41586-024-07763-9" target="_blank" rel="noreferrer">Исследование ↗</a> · <a href="data/taste-circuit.json" target="_blank" rel="noreferrer">Данные и происхождение ↗</a> · <a href="data/MODEL-NOTES.txt" target="_blank" rel="noreferrer">Допущения модели ↗</a></p></details>
     </section>
     <section class="journal" aria-label="Журнал событий"><div class="journal-title"><h2>Ход опыта</h2><span id="event-count">01 СОБЫТИЕ</span></div><ol id="events" aria-live="polite" aria-relevant="additions"></ol></section>
-    <footer><span class="note-icon">i</span><p><strong>Экспериментальная модель, не цифровая копия мозга.</strong> Цепь вкуса использует реальные связи FlyWire и расчётные импульсы. Остальные реакции пока игровые. Изображение — NeuroMechFly; движение в браузере не рассчитывается в MuJoCo.</p><a href="https://neuromechfly.org/" target="_blank" rel="noreferrer">О NeuroMechFly ↗</a></footer>
+    <footer><span class="note-icon">i</span><p><strong>Экспериментальная модель, не цифровая копия мозга.</strong> Цепь вкуса использует реальные связи FlyWire и расчётные импульсы. Обучение использует отдельную модель пластичности; движение, стресс и здоровье условны. Изображение — NeuroMechFly; движение в браузере не рассчитывается в MuJoCo.</p><a href="https://neuromechfly.org/" target="_blank" rel="noreferrer">О NeuroMechFly ↗</a></footer>
   </main>
-  <script type="module" src="app.js?v=4"></script>
+  <script type="module" src="app.js?v=5"></script>
 </body></html>

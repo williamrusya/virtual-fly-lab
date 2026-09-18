@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {TasteCircuit} from '../dist/neural.js';
+import {MushroomBody} from '../dist/learning.js';
 import {createState,addFood,advance,shock,clearMemory} from '../dist/model.js';
 const data=JSON.parse(readFileSync(new URL('../dist/data/taste-circuit.json',import.meta.url),'utf8'));
 
@@ -51,7 +52,8 @@ test('exact passive decay agrees with closed-form voltage solution',()=>{
 });
 
 test('learned avoidance gates feeding separately from an unchanged FlyWire circuit',()=>{
- const brain=new TasteCircuit(data),s=createState(brain);
+ const learning=new MushroomBody(JSON.parse(readFileSync(new URL('../dist/data/learning-circuit.json',import.meta.url),'utf8')));
+ const brain=new TasteCircuit(data),s=createState(brain,learning);
  addFood(s,s.x,s.y);advance(s,.2);assert.equal(s.eaten,0);assert.ok(brain.outputSpikes>0);
  shock(s,1);advance(s,2);assert.equal(s.eaten,0);
  // Move to the stimulus as an experimental probe: taste still drives the circuit.

@@ -42,24 +42,34 @@ particular, the pleasure meter is not calculated from dopamine neurons.
 
 ## Explicit fictional assumptions
 
-### Associative avoidance (v0.4)
+### Synaptic learning (v0.5)
 
-Place sugar, wait for tasting/eating, then apply a weak shock. Shock immediately
-interrupts feeding and causes escape. A shock at sugar contact or within 1.5
-simulated seconds of the last contact increases a scalar aversion memory.
-Offer more sugar: at memory >=35/100 the fly avoids it, even after stress fades.
-Unpaired shocks away from sugar do not teach the association. Memory generalizes
-to all sugar, halves every 90 simulated seconds and pauses with the experiment.
-Use the memory-reset button to compare behavior without resetting health/stress.
+The scalar aversion variable from v0.4 has been removed. A separate rate model
+now runs on an extracted FlyWire v630 left alpha2/alpha3 motif: 905 Kenyon cells,
+2 PPL1 DANs and 3 MBONs. Memory consists of individual efficacy multipliers on
+2,575 real KC->MBON connections; anatomical counts remain immutable.
+KC eligibility and compartment-matched DAN activity cause synaptic depression.
+The changed MBON response controls avoidance through an explicitly assumed decoder.
 
-This is an explicitly invented learning rule, not plasticity in the FlyWire
-circuit or a reproduction of biological conditioning. Real connection weights
-remain unchanged. Contact still excites the taste circuit, but aversion gates
-the behavioral readout. Exact parameters are in `dist/data/MODEL-NOTES.txt`.
-Tests compare paired vs unpaired stimuli, delayed stimuli, interruption/escape,
-retention beyond stress, forgetting, reset and feeding recovery, including the
-actual UI handlers in the DOM harness.
+Place sugar, apply a weak shock while the fly approaches or contacts it, then
+offer another portion. Inspect KC activity, PPL1 activity, MBON output relative
+to the counterfactual naive response, and the changed-connection count.
+For causal controls, restore weights and block plasticity or silence PPL1 before
+training. Existing memory survives either block. Weights persist until reset or
+reload; automatic forgetting is no longer modeled. Each tab is independent.
 
+**Biologically motivated does not mean biologically validated.** KC cue encoding
+and the shock-to-PPL1 mapping are synthetic; no verified sensory pathway joins
+the taste and learning modules. Rate dynamics and plasticity parameters are
+chosen for this demonstration, not fitted experimental measurements. The taste
+memory study used bitter reinforcement/direct DAN stimulation, not our virtual
+shock protocol. Full methods, source hashes, citations and limitations are in
+[LEARNING-NOTES](dist/data/LEARNING-NOTES.txt).
+
+Extraction: `uv run --with pyarrow==23.0.1 python web/scripts/extract-learning-circuit.py`
+(from the repository root). Source caches stay in ignored `research/`.
+
+### Health and movement
 These values are game rules, not measured biology or a model of neurotransmitters:
 
 - Pleasure is labeled an **illustrative dopamine index** (0–100), not an assay

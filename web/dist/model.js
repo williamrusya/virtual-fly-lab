@@ -1,18 +1,18 @@
 // Movement, health and reward are fictional. Optional brain gates sugar consumption.
 export const WIDTH = 900, HEIGHT = 620;
-export function createState(brain=null) {
+export function createState(brain=null,learning=null) {
   return {time:0,pleasure:18,stress:0,health:100,alive:true,paused:false,
     x:430,y:315,angle:-0.35,foods:[],shockUntil:0,cooldown:0,eatingUntil:0,
     eaten:0,shocks:0,events:[{time:0,text:'Новая муха исследует арену',kind:'start'}],nextId:1,
     brain,contactId:null,contactSeconds:0,contactSpikes:0,tasting:false,
-    escapeAngle:0,sugarAversion:0,lastTasteAt:-Infinity,pairedShocks:0};
+    escapeAngle:0,learning};
 }
-export const avoidsSugar=s=>s.sugarAversion>=.35;
-export const canAssociate=s=>s.time-s.lastTasteAt<=1.5||s.foods.some(f=>Math.hypot(f.x-s.x,f.y-s.y)<23);
+export const avoidsSugar=s=>(s.learning?.avoidance??0)>=(s.learning?.p.avoidance_threshold??.35);
+export const canAssociate=s=>(s.learning?.snapshot().eligibility??0)>.1;
 export function clearMemory(s){
   if(!s.alive||s.paused)return false;
-  s.sugarAversion=0;s.lastTasteAt=-Infinity;s.pairedShocks=0;
-  event(s,'Память о сахаре сброшена · здоровье и стресс сохранены','memory');return true;
+  s.learning?.clearMemory();
+  event(s,'Синаптические веса восстановлены · здоровье и стресс сохранены','memory');return true;
 }
 const clamp=(v,min=0,max=100)=>Math.min(max,Math.max(min,v));
 function event(s,text,kind){s.events.unshift({time:s.time,text,kind});s.events=s.events.slice(0,20);}
@@ -25,8 +25,7 @@ export function addFood(s,x,y){
 export function shock(s,power){
   if(![1,2,3].includes(power))throw new Error('Сила импульса должна быть от 1 до 3');
   if(!s.alive||s.paused||s.cooldown>0)return false;
-  const paired=canAssociate(s);
-  if(paired){s.sugarAversion+=(.45+.15*power)*(1-s.sugarAversion);s.pairedShocks++;}
+  s.learning?.reinforce(power);
   s.stress=clamp(s.stress+power*22);s.pleasure=clamp(s.pleasure-power*12);
   s.health=clamp(s.health-power*11);s.shocks++;s.shockUntil=s.time+1.1;
   s.cooldown=.7;s.eatingUntil=0;
@@ -38,7 +37,7 @@ export function shock(s,power){
   s.escapeAngle=endX<75||endX>825||endY<75||endY>545?Math.atan2(310-s.y,450-s.x):away;
   s.angle=s.escapeAngle;s.tasting=false;s.contactId=null;s.contactSeconds=0;s.contactSpikes=0;
   event(s,`Импульс ${['','слабый','средний','сильный'][power]} · стресс +${power*22}`, 'shock');
-  event(s,paired?'Связь запомнена: сахар → удар · теперь муха избегает сахара':'Удар без контакта с сахаром · связь с едой не сформирована',paired?'memory':'shock');
+  if(s.learning)event(s,'Сигнал подкрепления PPL1 · изменение весов зависит от активности KC','memory');
   checkDeath(s);return true;
 }
 function checkDeath(s){if(s.alive&&s.health<=0){s.alive=false;s.health=0;event(s,'Муха погибла · опыт завершён','death');}}
@@ -49,21 +48,22 @@ export function advance(s,dt){
   for(let remaining=dt;remaining>1e-8&&s.alive;){
     const h=Math.min(remaining,.02);remaining-=h;s.time+=h;
     s.cooldown=Math.max(0,s.cooldown-h);
-    // Illustrative associative memory: exponential forgetting, half-life 90 s.
-    s.sugarAversion*=Math.pow(2,-h/90);
     s.pleasure=clamp(s.pleasure-.75*h);
     s.stress=clamp(s.stress-1.8*h);
     if(s.stress>70)s.health=clamp(s.health-(s.stress-70)*.2*h);
     checkDeath(s);if(!s.alive)break;
     const fleeing=s.time<s.shockUntil;
-    const avoiding=avoidsSugar(s);
     const nearest=s.foods.reduce((best,f)=>!best||Math.hypot(f.x-s.x,f.y-s.y)<Math.hypot(best.x-s.x,best.y-s.y)?f:best,null);
+    // Explicit surrogate sensory encoding: nearby sugar presents a fixed KC cue.
+    // This is not a reconstructed taste/vision-to-KC pathway.
+    s.learning?.advance(h,nearest&&Math.hypot(nearest.x-s.x,nearest.y-s.y)<180?0:null);
+    const avoiding=avoidsSugar(s);
     let target=!fleeing&&!avoiding?nearest:null;
     const contact=Boolean(!fleeing&&nearest&&Math.hypot(nearest.x-s.x,nearest.y-s.y)<23);
     if(!contact||s.contactId!==nearest.id){s.contactId=contact?nearest.id:null;s.contactSpikes=0;s.contactSeconds=0;}
     const spikes=s.brain?s.brain.advance(h,contact):0;
     s.tasting=contact&&!avoiding;
-    if(contact){s.lastTasteAt=s.time;s.contactSeconds+=h;s.contactSpikes+=spikes;}
+    if(contact){s.contactSeconds+=h;s.contactSpikes+=spikes;}
     // Explicit behavioral readout assumption, NOT an experimentally fitted law:
     // require 3 MN9 spikes and 300 ms contact before consuming the sugar portion.
     const neuralReady=!s.brain||(s.contactSpikes>=3&&s.contactSeconds>=.3);
