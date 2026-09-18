@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10191c">
+  <title>Virtual Fly Lab — живая лаборатория</title>
+  <meta name="description" content="Наблюдайте за виртуальной мухой: давайте еду, меняйте стимулы и следите за удовольствием, стрессом и здоровьем.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%2310191c'/%3E%3Ctext x='7' y='29' font-size='26' fill='%239ee5d1'%3EF%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css?v=3">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="./"><span class="brand-mark">F<span>↗</span></span><span>Virtual Fly <b>Lab</b><small>ИНТЕРАКТИВНАЯ ЛАБОРАТОРИЯ</small></span></a><span class="model-badge">FlyWire · 447 нейронов <span>v0.3</span></span></header>
+  <main>
+    <div class="heading"><div><div class="eyebrow">ЭКСПЕРИМЕНТ / 001</div><h1>Муха под наблюдением</h1></div><p>Еда, удовольствие и стресс.<br class="desktop"> Как меняется её поведение?</p></div>
+    <div class="workspace">
+      <section class="chamber" aria-label="Арена с виртуальной мухой">
+        <div class="chamber-top"><div><span class="live-dot" id="live-dot"></span><strong id="state-label">Исследует арену</strong></div><span id="clock">00:00</span></div>
+        <div class="arena-wrap"><canvas id="arena" width="900" height="620" aria-label="Виртуальная муха. Нажмите на арену, чтобы положить сахар."></canvas>
+          <div id="fly-sprite" aria-hidden="true" hidden></div>
+          <div class="arena-label"><span>ОСОБЬ 01</span><span>Drosophila · виртуальная модель</span></div>
+          <div class="arena-hint" id="arena-hint">Нажми на арену, чтобы положить сахар</div>
+          <div class="end-overlay" id="end-overlay" hidden><div><span class="end-symbol">×</span><h2>Опыт завершён</h2><p>Здоровье мухи достигло нуля.<br>Начни новый опыт с новой особью.</p><button id="restart-overlay" class="primary">Новая муха ↗</button></div></div>
+        </div>
+        <div class="chamber-bottom"><span><span class="legend-food"></span> Сахар <span class="legend-fly"></span> Муха</span><button id="pause" class="quiet" aria-pressed="false">Ⅱ Пауза</button></div>
+      </section>
+      <aside class="controls">
+        <div class="panel-title"><h2>Состояние мухи</h2><span id="condition">В норме</span></div>
+        <div class="metric pleasure"><div><label for="pleasure">Удовольствие</label><output id="pleasure-value">18<span>/100</span></output></div><progress id="pleasure" max="100" value="18"></progress><small>Условный индекс дофамина</small></div>
+        <div class="metric stress"><div><label for="stress">Стресс</label><output id="stress-value">0<span>/100</span></output></div><progress id="stress" max="100" value="0"></progress><small id="stress-note">Спокойное состояние</small></div>
+        <div class="metric health"><div><label for="health">Здоровье</label><output id="health-value">100<span>/100</span></output></div><progress id="health" max="100" value="100"></progress><small>При нуле опыт заканчивается</small></div>
+        <div class="actions"><h2>Воздействия</h2><button id="feed" class="primary"><span>＋ Дать сахар</span><span class="button-note">Награда</span></button><p>Муха повернётся к сахару и подойдёт к нему. Удовольствие растёт после поедания.</p>
+          <div class="intensity"><label for="intensity">Сила импульса</label><output id="intensity-value">Слабый</output></div><input id="intensity" type="range" min="1" max="3" step="1" value="1" aria-valuetext="Слабый"><div class="range-labels"><span>Слабый</span><span>Сильный</span></div>
+          <button id="shock" class="shock-button"><span>ϟ Удар током</span><span class="button-note">Стресс</span></button><p>Повышает стресс и снижает здоровье. Повторные импульсы могут быть смертельны.</p>
+        </div><button id="reset" class="reset-button">↻ Начать заново</button>
+      </aside>
+    </div>
+    <section class="neural-panel" aria-label="Нейронная цепь реакции на сахар">
+      <div class="neural-heading"><div><div class="eyebrow">РЕАЛЬНЫЕ СВЯЗИ · МОДЕЛЬ АКТИВНОСТИ</div><h2>Нейронная цепь вкуса</h2></div><span id="neural-state" role="status">Загрузка данных…</span></div>
+      <div class="neural-stages">
+        <div><small>21 ВХОДНОЙ НЕЙРОН САХАРА</small><strong id="input-spikes">0</strong><span>импульсов с начала опыта</span></div>
+        <div><small>447 НЕЙРОНОВ · 24 403 СВЯЗИ</small><strong id="active-neurons">0</strong><span>недавно активных нейронов</span></div>
+        <div><small>ВЫХОД MN9 · <span id="mn9-voltage">−52.0 мВ</span></small><strong id="output-spikes">0</strong><span>импульсов на выходе</span></div>
+      </div>
+      <label class="neural-switch"><input type="checkbox" id="silence-mn9"> Отключить MN9 — проверить, сможет ли муха съесть сахар</label>
+      <details><summary>Что здесь взято из реальной мухи?</summary><p>Идентификаторы нейронов и число связей взяты из FlyWire v630, опубликованного с моделью Shiu и соавторов. Мы выделили небольшую часть сети для реакции на вкус сахара. Активность рассчитывается моделью LIF, а не записывается из живого мозга.</p><p>Сахар стимулирует сеть только при контакте. Импульсы MN9 разрешают поедание; это наш упрощённый перевод активности в действие. Поиск сахара, ходьба, дофаминовая шкала, стресс и смерть пока заданы правилами — эта цепь ими не управляет.</p><p><a href="https://doi.org/10.1038/s41586-024-07763-9" target="_blank" rel="noreferrer">Исследование ↗</a> · <a href="data/taste-circuit.json" target="_blank" rel="noreferrer">Данные и происхождение ↗</a> · <a href="data/MODEL-NOTES.txt" target="_blank" rel="noreferrer">Допущения модели ↗</a></p></details>
+    </section>
+    <section class="journal" aria-label="Журнал событий"><div class="journal-title"><h2>Ход опыта</h2><span id="event-count">01 СОБЫТИЕ</span></div><ol id="events" aria-live="polite" aria-relevant="additions"></ol></section>
+    <footer><span class="note-icon">i</span><p><strong>Экспериментальная модель, не цифровая копия мозга.</strong> Цепь вкуса использует реальные связи FlyWire и расчётные импульсы. Остальные реакции пока игровые. Изображение — NeuroMechFly; движение в браузере не рассчитывается в MuJoCo.</p><a href="https://neuromechfly.org/" target="_blank" rel="noreferrer">О NeuroMechFly ↗</a></footer>
+  </main>
+  <script type="module" src="app.js?v=3"></script>
+</body></html>

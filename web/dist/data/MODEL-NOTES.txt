@@ -1,0 +1,81 @@
+Virtual Fly Lab v0.3 — reduced taste circuit
+
+SOURCE AND PROVENANCE
+Model: Shiu et al., A Drosophila computational brain model reveals sensorimotor
+processing, Nature (2024), https://doi.org/10.1038/s41586-024-07763-9
+Code and data: https://github.com/philshiu/Drosophila_brain_model
+Pinned commit: 91bdd1e7dcf193f3e7ca5a8933497fcef63b7960
+Anatomy: FlyWire Consortium, FAFB female adult brain, materialization v630.
+This is the older dataset used in the authors' example, not current v783 or BANC.
+Source file URLs and SHA-256 checksums are embedded in taste-circuit.json.
+The authors' MIT license is retained in SHIU-LICENSE.txt. FlyWire's broader
+public-data terms also apply; this educational derivative should be treated as
+noncommercial. A code license does not replace anatomical-data terms.
+FlyWire public-data guidance: https://flywire.ai/guidelines
+CC BY-NC 4.0: https://creativecommons.org/licenses/by-nc/4.0/
+Attribution: FlyWire Consortium; Dorkenwald et al. (brain reconstruction),
+Schlegel et al. (annotation), and the synapse/transmitter contributors credited
+by FlyWire. Selection and browser adaptation by Virtual Fly Lab; no endorsement
+by the source authors is implied. The extracted data is modified by subsetting.
+
+SELECTION
+The 21 sugar-sensing input IDs and output MN9 (720575940660219265) are taken
+directly from the authors' example.ipynb. Include every neuron on a directed
+input-to-output path with at most three edges, plus all input and output cells.
+Retain ALL edges between included neurons, including recurrent and inhibitory
+edges, with original synapse counts and author-assigned signed counts.
+Result: 447 neurons, 24,403 directed connections, 218,932 anatomical synapses.
+No IDs or anatomical edges are invented. Other neuron roles are not annotated
+here; "network" does not assert a cell type. Root IDs remain strings to avoid
+JavaScript integer precision loss. External inputs/outputs are omitted.
+
+DYNAMICS (ASSUMED, NOT MEASURED PER CELL)
+Identical LIF cells with dv/dt=(Vrest-v+g)/20 ms and dg/dt=-g/5 ms.
+Rest/reset -52 mV; threshold strictly above -45 mV; refractory 2.2 ms;
+synaptic delay 1.8 ms; gain 0.275 mV per signed anatomical synapse.
+These parameters come from the authors' model.py. Signed transmitter effects
+are assumptions from that model, not a direct measurement of receptor effects.
+The browser integrates the linear subthreshold equations analytically on a
+0.1 ms grid. Both state variables pause during refractory time; incoming
+synaptic events can still accumulate. Spiking resets v and g.
+Each tick: integrate and detect threshold crossings, deliver due synaptic events,
+apply independent Bernoulli approximations to Poisson input, reset spikes, and
+schedule outgoing events. This implementation is not claimed bit-for-bit
+equivalent to Brian2 or validated as a reproduction of the full published model.
+
+SENSORY ENCODING (APPLICATION ASSUMPTION)
+At physical contact in the 2D arena (distance <23 canvas units), all 21 input
+neurons receive independent 150 Hz drives of 68.75 mV. Input cells have zero
+refractory duration, matching the authors' stimulation convention. This is an
+idealized stimulation protocol, not a measured taste-concentration response.
+No stimulation is applied while the fly is merely approaching sugar.
+Seeded xorshift32 provides reproducible input timing (default seed 1).
+
+BEHAVIORAL DECODING (APPLICATION ASSUMPTION)
+After at least 300 ms of contact and three MN9 spikes during that contact, the
+application consumes one sugar portion. MN9 is used as an output proxy; these
+thresholds and the translation to consumption were chosen for the demo.
+This is not a validated ingestion, proboscis-muscle, or feeding mechanics model.
+Silencing MN9 clamps its state and blocks its spikes, preventing consumption.
+Upstream cells remain active. Unchecking restores its dynamics.
+
+WHAT IS STILL SCRIPTED
+Walking, attraction to sugar, escape from shocks, pleasure/"dopamine", stress,
+health loss and death remain the earlier fictional browser rules. No dopamine
+concentration, electrical injury, learning, hunger or whole-body neuroscience
+is simulated. The new circuit only gates the contact-taste feeding response.
+
+VALIDATION AND LIMITATIONS
+Tests check exact IDs/counts, baseline silence, input-driven MN9 activity, loss
+of output when edges are removed or MN9 is silenced, causality of consumption,
+seed/time-slicing reproducibility, and analytic passive decay. The full original
+dataset is used only for reproducible extraction; the deployed graph is reduced.
+Omitting external pathways changes the network dynamics. These tests establish
+software behavior, not agreement with living flies or the full-model results.
+There are no learned parameters added by this app; the synaptic gain is inherited
+from the published model. Anatomical connectivity is not a complete digital
+copy of a living brain, and computed spikes are not experimental recordings.
+
+Reproduce extraction from repository root:
+uv run --with pyarrow==23.0.1 python web/scripts/extract-taste-circuit.py
+Tests: node --test web/tests/*.test.js

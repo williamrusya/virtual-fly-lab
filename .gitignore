@@ -1,0 +1,12 @@
+.venv/
+.reference/
+__pycache__/
+*.egg-info/
+outputs/
+research/
+.pytest_cache/
+node_modules/
+*.log
+.env
+.env.*
+.openai/
