@@ -6,10 +6,10 @@
   <title>Virtual Fly Lab — живая лаборатория</title>
   <meta name="description" content="Наблюдайте за виртуальной мухой: давайте еду, меняйте стимулы и следите за удовольствием, стрессом и здоровьем.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%2310191c'/%3E%3Ctext x='7' y='29' font-size='26' fill='%239ee5d1'%3EF%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
-  <header class="topbar"><a class="brand" href="./"><span class="brand-mark">F<span>↗</span></span><span>Virtual Fly <b>Lab</b><small>ИНТЕРАКТИВНАЯ ЛАБОРАТОРИЯ</small></span></a><span class="model-badge">FlyWire · 447 нейронов <span>v0.3</span></span></header>
+  <header class="topbar"><a class="brand" href="./"><span class="brand-mark">F<span>↗</span></span><span>Virtual Fly <b>Lab</b><small>ИНТЕРАКТИВНАЯ ЛАБОРАТОРИЯ</small></span></a><span class="model-badge">FlyWire · 447 нейронов <span>v0.4</span></span></header>
   <main>
     <div class="heading"><div><div class="eyebrow">ЭКСПЕРИМЕНТ / 001</div><h1>Муха под наблюдением</h1></div><p>Еда, удовольствие и стресс.<br class="desktop"> Как меняется её поведение?</p></div>
     <div class="workspace">
@@ -28,12 +28,21 @@
         <div class="metric pleasure"><div><label for="pleasure">Удовольствие</label><output id="pleasure-value">18<span>/100</span></output></div><progress id="pleasure" max="100" value="18"></progress><small>Условный индекс дофамина</small></div>
         <div class="metric stress"><div><label for="stress">Стресс</label><output id="stress-value">0<span>/100</span></output></div><progress id="stress" max="100" value="0"></progress><small id="stress-note">Спокойное состояние</small></div>
         <div class="metric health"><div><label for="health">Здоровье</label><output id="health-value">100<span>/100</span></output></div><progress id="health" max="100" value="100"></progress><small>При нуле опыт заканчивается</small></div>
-        <div class="actions"><h2>Воздействия</h2><button id="feed" class="primary"><span>＋ Дать сахар</span><span class="button-note">Награда</span></button><p>Муха повернётся к сахару и подойдёт к нему. Удовольствие растёт после поедания.</p>
+        <div class="actions"><h2>Воздействия</h2><button id="feed" class="primary"><span>＋ Дать сахар</span><span class="button-note">Награда</span></button><p>Необученная муха подходит к сахару. После сочетания сахара с ударом она начинает избегать еды.</p>
           <div class="intensity"><label for="intensity">Сила импульса</label><output id="intensity-value">Слабый</output></div><input id="intensity" type="range" min="1" max="3" step="1" value="1" aria-valuetext="Слабый"><div class="range-labels"><span>Слабый</span><span>Сильный</span></div>
-          <button id="shock" class="shock-button"><span>ϟ Удар током</span><span class="button-note">Стресс</span></button><p>Повышает стресс и снижает здоровье. Повторные импульсы могут быть смертельны.</p>
+          <button id="shock" class="shock-button"><span>ϟ Удар током</span><span class="button-note">Стресс</span></button><p>Прерывает питание и вызывает бегство. При контакте с сахаром формирует память об опасности. Повторные импульсы могут быть смертельны.</p>
         </div><button id="reset" class="reset-button">↻ Начать заново</button>
       </aside>
     </div>
+    <section class="learning-panel" aria-label="Упрощённое обучение избеганию сахара">
+      <div class="eyebrow">УПРОЩЁННАЯ МОДЕЛЬ ОБУЧЕНИЯ</div>
+      <h2>Память: сахар → удар</h2>
+      <div class="metric memory"><div><label for="memory">Связь с опасностью</label><output id="memory-value">0/100</output></div><progress id="memory" max="100" value="0"></progress><small id="memory-note">Связь сахара с ударом ещё не выучена</small></div>
+      <p id="pairing-note" role="status">Для обучения дождись контакта с сахаром и нажми «Удар током»</p>
+      <p>Дай сахар → дождись «Пробует сахар» или «Ест сахар» → нажми слабый импульс → предложи новую порцию. При памяти от 35/100 муха избегает любого сахара. Удар вдали от еды эту связь не создаёт.</p>
+      <button id="clear-memory" class="quiet">Сбросить только память</button>
+      <p>Память задана отдельным правилом и постепенно ослабевает. Это не обучение нейронов FlyWire и не доказательство поведения живой мухи. Удар связывается с сахаром при контакте или в течение 1,5 секунды после него. Сброс памяти сохраняет стресс и здоровье; «Начать заново» сбрасывает весь опыт.</p>
+    </section>
     <section class="neural-panel" aria-label="Нейронная цепь реакции на сахар">
       <div class="neural-heading"><div><div class="eyebrow">РЕАЛЬНЫЕ СВЯЗИ · МОДЕЛЬ АКТИВНОСТИ</div><h2>Нейронная цепь вкуса</h2></div><span id="neural-state" role="status">Загрузка данных…</span></div>
       <div class="neural-stages">
@@ -47,5 +56,5 @@
     <section class="journal" aria-label="Журнал событий"><div class="journal-title"><h2>Ход опыта</h2><span id="event-count">01 СОБЫТИЕ</span></div><ol id="events" aria-live="polite" aria-relevant="additions"></ol></section>
     <footer><span class="note-icon">i</span><p><strong>Экспериментальная модель, не цифровая копия мозга.</strong> Цепь вкуса использует реальные связи FlyWire и расчётные импульсы. Остальные реакции пока игровые. Изображение — NeuroMechFly; движение в браузере не рассчитывается в MuJoCo.</p><a href="https://neuromechfly.org/" target="_blank" rel="noreferrer">О NeuroMechFly ↗</a></footer>
   </main>
-  <script type="module" src="app.js?v=3"></script>
+  <script type="module" src="app.js?v=4"></script>
 </body></html>

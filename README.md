@@ -6,6 +6,8 @@ The browser version includes a reduced taste circuit: 447 simulated neurons and
 24,403 directed connections from FlyWire v630, adapted from Shiu et al. (2024).
 This circuit gates feeding at sugar contact; walking, attraction, pleasure,
 stress and health remain illustrative application rules, not a complete brain.
+Version 0.4 adds a separate simplified associative memory: pair sugar contact
+with a shock to teach avoidance. This does not modify the FlyWire connections.
 Source attribution and scientific limitations are in
 [MODEL-NOTES](web/dist/data/MODEL-NOTES.txt).
 

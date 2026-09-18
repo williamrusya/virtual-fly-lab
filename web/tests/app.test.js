@@ -33,4 +33,15 @@ test('actual app loop updates both clock and visible sprite; feed control leads 
   assert.equal(element('fly-sprite').style.left,frozen);
   element('pause').listeners.click();callback(now-5);callback(now);
   assert.ok(Number.isFinite(parseFloat(element('fly-sprite').style.left)));
+  element('reset').listeners.click();callback(now);
+  element('arena').listeners.pointerdown({clientX:430,clientY:315});
+  now+=100;callback(now);
+  element('shock').listeners.click();
+  assert.ok(Number.parseInt(element('memory-value').textContent)>=59);
+  for(let i=0;i<180;i++){now+=1000/60;callback(now);}
+  assert.match(element('state-label').textContent,/Избегает сахара/);
+  element('clear-memory').listeners.click();
+  assert.equal(element('memory-value').textContent,'0/100');
+  for(let i=0;i<600;i++){now+=1000/60;callback(now);}
+  assert.ok(element('events').children.some(li=>li.children.includes('Сахар съеден · удовольствие +32')));
 });

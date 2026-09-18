@@ -42,6 +42,24 @@ particular, the pleasure meter is not calculated from dopamine neurons.
 
 ## Explicit fictional assumptions
 
+### Associative avoidance (v0.4)
+
+Place sugar, wait for tasting/eating, then apply a weak shock. Shock immediately
+interrupts feeding and causes escape. A shock at sugar contact or within 1.5
+simulated seconds of the last contact increases a scalar aversion memory.
+Offer more sugar: at memory >=35/100 the fly avoids it, even after stress fades.
+Unpaired shocks away from sugar do not teach the association. Memory generalizes
+to all sugar, halves every 90 simulated seconds and pauses with the experiment.
+Use the memory-reset button to compare behavior without resetting health/stress.
+
+This is an explicitly invented learning rule, not plasticity in the FlyWire
+circuit or a reproduction of biological conditioning. Real connection weights
+remain unchanged. Contact still excites the taste circuit, but aversion gates
+the behavioral readout. Exact parameters are in `dist/data/MODEL-NOTES.txt`.
+Tests compare paired vs unpaired stimuli, delayed stimuli, interruption/escape,
+retention beyond stress, forgetting, reset and feeding recovery, including the
+actual UI handlers in the DOM harness.
+
 These values are game rules, not measured biology or a model of neurotransmitters:
 
 - Pleasure is labeled an **illustrative dopamine index** (0–100), not an assay

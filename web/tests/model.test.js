@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createState,addFood,shock,advance,status} from '../dist/model.js';
+import {createState,addFood,shock,advance,status,avoidsSugar,clearMemory} from '../dist/model.js';
 
 test('food rewards consumption, not placement',()=>{
  const s=createState();const initial=s.pleasure;addFood(s,s.x+100,s.y);
@@ -43,4 +43,40 @@ test('reaches sugar at all arena edges and behind the fly',()=>{
    const s=createState();addFood(s,x,y);advance(s,15);
    assert.equal(s.eaten,1,`unreachable sugar at ${x},${y}`);
  }
+});
+
+test('paired shock teaches avoidance; unpaired shock does not',()=>{
+ const trained=createState(),control=createState();
+ addFood(trained,trained.x,trained.y);advance(trained,.02);
+ assert.equal(trained.eaten,1);shock(trained,1);shock(control,1);
+ assert.ok(avoidsSugar(trained));assert.equal(control.sugarAversion,0);
+ advance(trained,15);advance(control,15);
+ assert.equal(trained.stress,0);assert.ok(avoidsSugar(trained),'memory outlasts stress and escape');
+ addFood(trained,450,310);addFood(control,450,310);
+ advance(trained,15);advance(control,15);
+ assert.equal(trained.eaten,1);assert.equal(control.eaten,1);
+ assert.equal(trained.foods.length,1);assert.equal(control.foods.length,0);
+ assert.ok(Math.hypot(trained.x-450,trained.y-310)>100);
+ const health=trained.health,stress=trained.stress;
+ assert.ok(clearMemory(trained));assert.equal(trained.health,health);assert.equal(trained.stress,stress);
+ advance(trained,15);assert.equal(trained.eaten,2);
+});
+
+test('association has a limited taste window; pause and reset handle memory',()=>{
+ const s=createState();addFood(s,s.x,s.y);advance(s,.02);advance(s,2);
+ shock(s,1);assert.equal(s.sugarAversion,0,'late shock must not teach sugar avoidance');
+ advance(s,2);addFood(s,s.x,s.y);advance(s,.02);shock(s,1);
+ const memory=s.sugarAversion;assert.ok(memory>0);
+ s.paused=true;advance(s,90);assert.equal(s.sugarAversion,memory);assert.equal(clearMemory(s),false);
+ s.paused=false;advance(s,90);assert.ok(Math.abs(s.sugarAversion-memory/2)<1e-10);
+ assert.equal(avoidsSugar(s),false);assert.equal(createState().sugarAversion,0);
+});
+
+test('shock interrupts tasting immediately and increases separation from sugar',()=>{
+ const s=createState({advance:()=>0});addFood(s,s.x+10,s.y);advance(s,.1);
+ assert.equal(s.tasting,true);assert.equal(s.eaten,0);
+ shock(s,1);assert.equal(s.tasting,false);assert.equal(s.contactSeconds,0);
+ const start=Math.hypot(s.x-s.foods[0].x,s.y-s.foods[0].y);
+ advance(s,.5);assert.ok(Math.hypot(s.x-s.foods[0].x,s.y-s.foods[0].y)>start+40);
+ assert.equal(s.eaten,0);assert.ok(avoidsSugar(s));
 });

@@ -1,4 +1,4 @@
-Virtual Fly Lab v0.3 — reduced taste circuit
+Virtual Fly Lab v0.4 — reduced taste circuit and illustrative associative memory
 
 SOURCE AND PROVENANCE
 Model: Shiu et al., A Drosophila computational brain model reveals sensorimotor
@@ -53,7 +53,8 @@ Seeded xorshift32 provides reproducible input timing (default seed 1).
 
 BEHAVIORAL DECODING (APPLICATION ASSUMPTION)
 After at least 300 ms of contact and three MN9 spikes during that contact, the
-application consumes one sugar portion. MN9 is used as an output proxy; these
+application consumes one sugar portion unless learned avoidance inhibits feeding.
+MN9 is used as an output proxy; these
 thresholds and the translation to consumption were chosen for the demo.
 This is not a validated ingestion, proboscis-muscle, or feeding mechanics model.
 Silencing MN9 clamps its state and blocks its spikes, preventing consumption.
@@ -62,8 +63,28 @@ Upstream cells remain active. Unchecking restores its dynamics.
 WHAT IS STILL SCRIPTED
 Walking, attraction to sugar, escape from shocks, pleasure/"dopamine", stress,
 health loss and death remain the earlier fictional browser rules. No dopamine
-concentration, electrical injury, learning, hunger or whole-body neuroscience
-is simulated. The new circuit only gates the contact-taste feeding response.
+concentration, electrical injury, hunger or whole-body neuroscience is simulated.
+The circuit only gates the contact-taste feeding response. Learning is modeled
+separately using the illustrative application rule below, not neural plasticity.
+
+ASSOCIATIVE MEMORY (APPLICATION ASSUMPTION, NOT BIOLOGICALLY VALIDATED)
+Shock immediately interrupts tasting/feeding and causes 1.1 seconds of escape.
+Escape initially points away from the nearest sugar, or toward arena space if
+the escape endpoint would hit a wall. Without sugar the fly reverses direction.
+A shock during contact (<23 arena units), or within 1.5 simulated seconds of
+the last contact, updates aversion A: A <- A + alpha*(1-A), with alpha 0.60,
+0.75, or 0.90 for the three shock strengths. Unpaired shocks do not update A.
+A starts at 0 and decays exponentially with a 90-second half-life. At A >= 0.35,
+the fly stops seeking/consuming sugar and steers away from nearby sugar (<180
+arena units). The association generalizes to all sugar locations. This is a
+single scalar memory, not reconstructed mushroom-body or dopamine circuitry.
+Real anatomical weights and LIF parameters remain unchanged. Contact can still
+activate the taste circuit during avoidance; a separate action gate blocks eating.
+There is no taste input during immediate shock escape. No synaptic learning,
+biological conditioning efficacy, or measured shock dosage is claimed.
+Pause freezes memory decay; reset clears the entire experiment. The diagnostic
+memory-reset button clears A, pairing count and the recent-contact timestamp,
+while preserving health, stress and neural state. It is not a biological action.
 
 VALIDATION AND LIMITATIONS
 Tests check exact IDs/counts, baseline silence, input-driven MN9 activity, loss
@@ -72,8 +93,8 @@ seed/time-slicing reproducibility, and analytic passive decay. The full original
 dataset is used only for reproducible extraction; the deployed graph is reduced.
 Omitting external pathways changes the network dynamics. These tests establish
 software behavior, not agreement with living flies or the full-model results.
-There are no learned parameters added by this app; the synaptic gain is inherited
-from the published model. Anatomical connectivity is not a complete digital
+The learned scalar aversion belongs to the application, not the neural circuit;
+the synaptic gain is inherited from the published model. Anatomical connectivity is not a complete digital
 copy of a living brain, and computed spikes are not experimental recordings.
 
 Reproduce extraction from repository root:
