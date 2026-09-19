@@ -1,6 +1,7 @@
-import {createState,addFood,shock,advance,status,avoidsSugar,canAssociate,clearMemory,startChoice,availableFoods,WIDTH,HEIGHT} from './model.js?v=6';
+import {startSpider,moveWeb} from './spider.js?v=7';
+import {createState,addFood,shock,advance,status,avoidsSugar,canAssociate,clearMemory,startChoice,availableFoods,WIDTH,HEIGHT} from './model.js?v=7';
 import {TasteCircuit} from './neural.js?v=3';
-import {MushroomBody} from './learning.js?v=6';
+import {MushroomBody} from './learning.js?v=7';
 const $=id=>document.getElementById(id);
 const canvas=$('arena'),ctx=canvas.getContext('2d');
 const flyImage=new Image();flyImage.src='assets/fly-walk.png?v=2';
@@ -31,6 +32,16 @@ function draw(){
     ctx.strokeStyle='#44806380';ctx.lineWidth=1.5;ctx.setLineDash([5,7]);
     ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(target.x,target.y);ctx.stroke();ctx.setLineDash([]);
   }
+  if(s.spider){
+    const p=s.spider;ctx.strokeStyle=p.trapped?'#b25747':'#657181';ctx.lineWidth=1.5;
+    for(let r=15;r<=p.radius;r+=16){ctx.beginPath();ctx.arc(p.webX,p.webY,r,0,Math.PI*2);ctx.stroke();}
+    for(let i=0;i<12;i++){const a=i*Math.PI/6;ctx.beginPath();ctx.moveTo(p.webX,p.webY);ctx.lineTo(p.webX+Math.cos(a)*p.radius,p.webY+Math.sin(a)*p.radius);ctx.stroke();}
+    ctx.fillStyle='#464452';ctx.font='bold 13px sans-serif';ctx.fillText('ПАУТИНА',p.webX,p.webY-p.radius-12);
+    ctx.strokeStyle='#342d38';ctx.lineWidth=3;
+    for(let i=0;i<8;i++){const side=i<4?-1:1,k=i%4;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+side*18,p.y+(k-1.5)*12);ctx.lineTo(p.x+side*26,p.y+(k-1.5)*18+5);ctx.stroke();}
+    ctx.fillStyle='#342d38';ctx.beginPath();ctx.ellipse(p.x,p.y,11,16,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#dd947b';ctx.beginPath();ctx.arc(p.x,p.y-7,4,0,Math.PI*2);ctx.fill();
+  }
   s.foods.forEach(f=>{
     const empty=f.feeder&&s.time<f.readyAt;
     ctx.fillStyle=f.cue===1?'#7189ed40':'#ed9a4540';ctx.beginPath();ctx.arc(f.x,f.y,40,0,2*Math.PI);ctx.fill();
@@ -58,6 +69,14 @@ function draw(){
   if(!flyImage.complete||!flyImage.naturalWidth){ctx.fillStyle='#425953';ctx.fillText('Загрузка мухи…',450,310);}
 }
 function refresh(){
+  const predator=s.spider;
+  $('start-spider').disabled=!neuralData;
+  $('start-spider-control').disabled=!neuralData;
+  $('move-web').disabled=!predator||!s.alive||s.paused||predator.trapped;
+  $('web-memory').value=(s.learning?.snapshot().cueDepression?.[2]??0)*100;
+  $('web-memory-value').textContent=Math.round($('web-memory').value)+'%';
+  $('spider-stats').textContent=predator?
+    (predator.enabled?'С обучением':'Без обучения')+' · '+timeText(s.time)+' · попаданий: '+predator.catches+' · спасений: '+predator.escapes+' · сахара съедено: '+s.eaten+(s.alive?' · опыт идёт':' · опыт завершён'):'Режим ещё не запущен';
   $('clock').textContent=timeText(s.time);$('state-label').textContent=neuralData?status(s):neuralError?'Не удалось загрузить нейронные данные':'Загрузка нейронной цепи…';
   const memory=s.learning?.snapshot();
   $('memory').value=(memory?.cueSynapticDepression??0)*100;
@@ -66,8 +85,8 @@ function refresh(){
   $('memory-b-value').textContent=`${Math.round((memory?.cueDepression?.[1]??0)*100)}%`;
   $('memory-note').textContent='Сигнал A (и сахар в свободном режиме)';
   const testing=s.choiceMode&&s.choicePhase==='test';
-  $('choice-phase').textContent=s.choiceMode?(testing?'Проверка · ток и пластичность отключены':'Наблюдение / обучение'):'Свободный режим';
-  $('active-cue').textContent=s.activeCue===null?'Нет сигнала рядом':`Активен сигнал ${s.activeCue===0?'A':'B'}`;
+  $('choice-phase').textContent=s.spider?'Паук и паутина':s.choiceMode?(testing?'Проверка · ток и пластичность отключены':'Наблюдение / обучение'):'Свободный режим';
+  $('active-cue').textContent=s.activeCue===null?'Нет сигнала рядом':s.activeCue===2?'Сигнал паутины':`Активен сигнал ${s.activeCue===0?'A':'B'}`;
   $('place-pair').disabled=!neuralData||!s.alive||s.paused;
   $('test-choice').disabled=!neuralData||!s.alive||s.paused||!s.choiceMode;
   $('swap-choice').disabled=!neuralData||!s.alive||s.paused;
@@ -79,9 +98,9 @@ function refresh(){
   const total=s.visits.test[0]+s.visits.test[1];
   $('choice-summary').textContent=total?`В проверке: ${total} посещений; A — ${Math.round(s.visits.test[0]/total*100)}%, B — ${Math.round(s.visits.test[1]/total*100)}%. Это доли посещений одной модели, не вероятности.`:'В проверке пока нет посещений. Отсутствие посещений тоже возможно; проценты не рассчитываются.';
   $('pairing-note').textContent=!s.alive?'Опыт завершён':s.paused?'Опыт на паузе':canAssociate(s)?'Активен след KC: импульс PPL1 может изменить синапсы':'Предложи сахар и подай слабый импульс при приближении или контакте';
-  $('clear-memory').disabled=!neuralData||!s.alive||s.paused||testing||!memory?.changedConnections;
-  $('freeze-plasticity').disabled=!neuralData||!s.alive||s.paused||testing;
-  $('silence-dan').disabled=!neuralData||!s.alive||s.paused||testing;
+  $('clear-memory').disabled=!neuralData||!s.alive||s.paused||testing||Boolean(s.spider)||!memory?.changedConnections;
+  $('freeze-plasticity').disabled=!neuralData||!s.alive||s.paused||testing||Boolean(s.spider);
+  $('silence-dan').disabled=!neuralData||!s.alive||s.paused||testing||Boolean(s.spider);
   $('kc-activity').textContent=memory?.activeKCs??0;
   $('dan-activity').textContent=(memory?.dopamineActivity??0).toFixed(2);
   $('mbon-activity').textContent=(memory?.outputActivity??0).toFixed(2);
@@ -94,13 +113,13 @@ function refresh(){
   }
   $('condition').textContent=!s.alive?'Погибла':s.health<30?'Критическое':s.stress>70?'Стресс':s.pleasure>55?'Довольна':'В норме';
   $('stress-note').textContent=!s.alive?'Опыт завершён':s.stress>70?'Сильный стресс снижает здоровье':s.stress>30?'Постепенно успокаивается':'Спокойное состояние';
-  $('feed').disabled=!neuralData||!s.alive||s.paused||s.choiceMode||s.foods.length>=5;
-  $('shock').disabled=!neuralData||!s.alive||s.paused||testing||s.cooldown>0;
+  $('feed').disabled=!neuralData||!s.alive||s.paused||s.choiceMode||Boolean(s.spider)||s.foods.length>=5;
+  $('shock').disabled=!neuralData||!s.alive||s.paused||testing||Boolean(s.spider)||s.cooldown>0;
   $('intensity').disabled=!s.alive||s.paused;
   $('pause').disabled=!neuralData||!s.alive;$('pause').textContent=s.paused?'▶ Продолжить':'Ⅱ Пауза';
   $('pause').setAttribute('aria-pressed',String(s.paused));
   $('end-overlay').hidden=s.alive;
-  $('arena-hint').textContent=!s.alive?'':s.paused?'Опыт на паузе':s.choiceMode?'Кормушки A/B пополняются через 8 секунд':s.foods.length>=5?'На арене уже 5 порций сахара':'Нажми на арену, чтобы положить сахар';
+  $('arena-hint').textContent=!s.alive?'':s.paused?'Опыт на паузе':s.spider?'Паук строит паутину · муха ищет обход':s.choiceMode?'Кормушки A/B пополняются через 8 секунд':s.foods.length>=5?'На арене уже 5 порций сахара':'Нажми на арену, чтобы положить сахар';
   document.querySelector('.chamber').classList.toggle('paused',s.paused);
   $('silence-mn9').disabled=!neuralData||!s.alive;
   $('neural-state').textContent=neuralError?'Ошибка загрузки. Обнови страницу.':!neuralData?'Загрузка данных…':s.brain.silenced?'Выход MN9 отключён':s.tasting?'Сахар активирует входные нейроны':'Ожидает контакта с сахаром';
@@ -123,6 +142,16 @@ function refresh(){
 function reset(){s=createState(neuralData?new TasteCircuit(neuralData):null,learningData?new MushroomBody(learningData):null);$('silence-mn9').checked=false;$('freeze-plasticity').checked=false;$('silence-dan').checked=false;$('swap-choice').checked=false;last=null;trail=[];eventsSignature='';refresh();draw();}
 function feed(x=s.x+Math.cos(s.angle)*190,y=s.y+Math.sin(s.angle)*190){if(!neuralData)return false;const ok=addFood(s,x,y);refresh();draw();return ok;}
 function applyShock(){const ok=shock(s,power);refresh();draw();return ok;}
+function beginSpider(enabled){
+  if(!neuralData)return;
+  const previous=s.spider?$('spider-stats').textContent:null;
+  reset();startSpider(s,enabled);$('freeze-plasticity').checked=!enabled;
+  if(previous)$('spider-previous').textContent='Предыдущий запуск: '+previous;
+  refresh();draw();
+}
+$('start-spider').addEventListener('click',()=>beginSpider(true));
+$('start-spider-control').addEventListener('click',()=>beginSpider(false));
+$('move-web').addEventListener('click',()=>{moveWeb(s);refresh();draw();});
 $('feed').addEventListener('click',()=>feed());
 $('shock').addEventListener('click',applyShock);
 function beginChoice(test){if(!neuralData)return;startChoice(s,test,test&&$('swap-choice').checked);trail=[];last=null;refresh();draw();}

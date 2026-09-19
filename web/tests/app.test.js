@@ -66,4 +66,15 @@ test('actual app loop updates both clock and visible sprite; feed control leads 
   element('reset').listeners.click();
   assert.equal(element('choice-phase').textContent,'Свободный режим');
   assert.equal(element('visits-test-0-value').textContent,0);
+  element('start-spider').listeners.click();
+  assert.equal(element('shock').disabled,true);assert.equal(element('feed').disabled,true);
+  assert.match(element('spider-stats').textContent,/С обучением/);
+  for(let i=0;i<120;i++){now+=100;callback(now);}
+  assert.ok(Number.parseInt(element('web-memory-value').textContent)>35);
+  element('start-spider-control').listeners.click();
+  assert.match(element('spider-previous').textContent,/С обучением/);
+  assert.equal(element('web-memory-value').textContent,'0%');
+  assert.equal(element('freeze-plasticity').disabled,true);
+  element('move-web').listeners.click();
+  element('reset').listeners.click();assert.equal(element('shock').disabled,false);
 });

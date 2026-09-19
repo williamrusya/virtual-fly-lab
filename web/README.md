@@ -126,6 +126,28 @@ backend, accounts, personal-data collection, or remote experiment storage.
 
 ## Validation
 
+### Predator mode (v0.7)
+
+The two predator start buttons reset the experiment to the same initial state,
+with plasticity enabled or frozen. A third disjoint synthetic group of 90 KCs
+encodes web proximity. Capture supplies a PPL1 pulse through the existing learning
+model. MBON avoidance drives a chosen tangent/outward steering rule. Sugar cues
+A/B, anatomical counts and the taste circuit are unchanged.
+
+The web grows from radius 55 to 95 at 3 arena units/s. Both groups have the same
+innate escape: after 0.8 s, outward speed is 32/capture-count units/s. The predator
+approaches at 35 units/s and kills on contact within 17 units. These arbitrary
+mechanics, proximity sensing and synthetic reinforcement are not reconstructed
+FlyWire pathways or validated biological behavior. Repeated captures exhaust
+escape by design. No randomness or population-level inference is involved.
+
+Compare captures, escapes and sugar consumption at equal elapsed simulation time.
+The UI retains the previous trial summary when starting the other condition.
+Relocating the web preserves learned weights but changes geometry; compare that
+protocol separately. Tests cover matched trials, cue specificity, fatal capture,
+pause/death, relocation, controls and frame segmentation. Canvas drawing and
+controls are exercised in a DOM harness, not a real-browser visual inspection.
+
 Model tests cover food, pulse strengths/cooldown, stress damage, terminal death,
 pause, reset, caps, and timing. Static asset routes and JS syntax are checked
 before publication. Browser visual/interaction QA was not requested. Optional

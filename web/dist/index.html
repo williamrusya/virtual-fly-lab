@@ -6,10 +6,10 @@
   <title>Virtual Fly Lab — живая лаборатория</title>
   <meta name="description" content="Наблюдайте за виртуальной мухой: давайте еду, меняйте стимулы и следите за удовольствием, стрессом и здоровьем.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%2310191c'/%3E%3Ctext x='7' y='29' font-size='26' fill='%239ee5d1'%3EF%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
-  <header class="topbar"><a class="brand" href="./"><span class="brand-mark">F<span>↗</span></span><span>Virtual Fly <b>Lab</b><small>ИНТЕРАКТИВНАЯ ЛАБОРАТОРИЯ</small></span></a><span class="model-badge">FlyWire · две цепи <span>v0.6</span></span></header>
+  <header class="topbar"><a class="brand" href="./"><span class="brand-mark">F<span>↗</span></span><span>Virtual Fly <b>Lab</b><small>ИНТЕРАКТИВНАЯ ЛАБОРАТОРИЯ</small></span></a><span class="model-badge">FlyWire · две цепи <span>v0.7</span></span></header>
   <main>
     <div class="heading"><div><div class="eyebrow">ЭКСПЕРИМЕНТ / 001</div><h1>Муха под наблюдением</h1></div><p>Еда, удовольствие и стресс.<br class="desktop"> Как меняется её поведение?</p></div>
     <div class="workspace">
@@ -34,6 +34,15 @@
         </div><button id="reset" class="reset-button">↻ Начать заново</button>
       </aside>
     </div>
+    <section class="learning-panel" aria-label="Паук и паутина">
+      <div class="eyebrow">ОПАСНОСТЬ · ПАМЯТЬ · ВЫЖИВАНИЕ</div>
+      <h2>Паук и паутина</h2>
+      <p>Между мухой и сахаром паук плетёт растущую паутину. При попадании муха пытается вырваться, а паук идёт к ней. Если он успеет добраться — муха погибнет. После спасения обученная муха может обходить паутину.</p>
+      <div class="choice-actions"><button id="start-spider" class="quiet">Новый опыт с обучением</button><button id="start-spider-control" class="quiet">Новый опыт без обучения</button><button id="move-web" class="quiet">Переместить паутину</button></div>
+      <p id="spider-stats" role="status">Режим ещё не запущен</p><p id="spider-previous"></p>
+      <div class="metric memory"><div><label for="web-memory">Ослабление связей сигнала паутины</label><output id="web-memory-value">0%</output></div><progress id="web-memory" max="100" value="0"></progress></div>
+      <details><summary>Как сравнивать и что здесь моделируется?</summary><p>Оба запуска начинают новый опыт с одинаковой геометрией, здоровьем и исходными весами. Сравнивай попадания, спасения и съеденный сахар за одинаковое время, например 60 секунд. Пауза останавливает опыт. Предыдущий результат остаётся при переключении между двумя кнопками. Перемещение паутины меняет условия: такой запуск сравнивай отдельно.</p><p>Третий синтетический сигнал активирует ещё 90 KC, отдельно от A/B. Попадание условно стимулирует PPL1; память меняет эффективность связей KC → MBON из FlyWire. Без обучения веса фиксированы. Распознавание паутины по расстоянию, сигнал опасности, обход, плетение и охота — выбранные правила приложения, не восстановленные нейронные пути. Врождённый побег есть в обеих группах; повторные попадания замедляют его. Эти опыты не доказывают поведение живой мухи. Ток и ручное изменение памяти в этом режиме отключены.</p></details>
+    </section>
     <section class="choice-panel learning-panel" aria-label="Выбор между кормушками A и B">
       <div class="eyebrow">ДВЕ КОРМУШКИ · ДВА УСЛОВНЫХ СИГНАЛА</div>
       <h2>Какой сахар выбирает муха?</h2>
@@ -93,5 +102,5 @@
     <section class="journal" aria-label="Журнал событий"><div class="journal-title"><h2>Ход опыта</h2><span id="event-count">01 СОБЫТИЕ</span></div><ol id="events" aria-live="polite" aria-relevant="additions"></ol></section>
     <footer><span class="note-icon">i</span><p><strong>Экспериментальная модель, не цифровая копия мозга.</strong> Цепь вкуса использует реальные связи FlyWire и расчётные импульсы. Обучение использует отдельную модель пластичности; движение, стресс и здоровье условны. Изображение — NeuroMechFly; движение в браузере не рассчитывается в MuJoCo.</p><a href="https://neuromechfly.org/" target="_blank" rel="noreferrer">О NeuroMechFly ↗</a></footer>
   </main>
-  <script type="module" src="app.js?v=6"></script>
+  <script type="module" src="app.js?v=7"></script>
 </body></html>

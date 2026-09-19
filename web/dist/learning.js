@@ -7,10 +7,10 @@ export class MushroomBody {
     this.data=data;this.p=data.parameters;this.n=data.neurons.length;
     this.kcs=[];this.dans=[];this.mbons=[];
     data.neurons.forEach((n,i)=>({KC:this.kcs,DAN:this.dans,MBON:this.mbons}[n.role]).push(i));
-    this.cues=[new Set(),new Set()];
+    this.cues=[new Set(),new Set(),new Set()];
     const ordered=[...this.kcs].sort((a,b)=>hash(data.neurons[a].id)-hash(data.neurons[b].id));
     const size=Math.max(1,Math.floor(ordered.length*.1));
-    for(let cue=0;cue<2;cue++)for(const i of ordered.slice(cue*size,(cue+1)*size))this.cues[cue].add(i);
+    for(let cue=0;cue<3;cue++)for(const i of ordered.slice(cue*size,(cue+1)*size))this.cues[cue].add(i);
     this.edges=data.edges.filter(([a,b])=>data.neurons[a].role==='KC'&&data.neurons[b].role==='MBON');
     this.modulators=this.edges.map(([,b])=>this.dans.filter(d=>
       data.neurons[d].compartment===data.neurons[b].compartment&&
@@ -37,7 +37,7 @@ export class MushroomBody {
     this.pulseRemaining=0;this.pulsePower=0;this.avoidance=0;this.pending=0;
   }
   advance(seconds,cue=null){
-    if(!Number.isFinite(seconds)||seconds<0||![null,0,1].includes(cue))throw new Error('Invalid learning input');
+    if(!Number.isFinite(seconds)||seconds<0||![null,0,1,2].includes(cue))throw new Error('Invalid learning input');
     this.pending+=seconds;
     const p=this.p,dt=p.dt_s,kcDecay=Math.exp(-dt/p.kc_tau_s),danDecay=Math.exp(-dt/p.dan_tau_s),
       outputDecay=Math.exp(-dt/p.mbon_tau_s),traceDecay=Math.exp(-dt/p.eligibility_tau_s);
@@ -73,9 +73,9 @@ export class MushroomBody {
     }
   }
   snapshot(){
-    let changed=0;const loss=[0,0],total=[0,0];
+    let changed=0;const loss=[0,0,0],total=[0,0,0];
     this.edges.forEach(([a,,n],e)=>{if(this.weights[e]<.999)changed++;
-      for(let cue=0;cue<2;cue++)if(this.cues[cue].has(a)){loss[cue]+=n*(1-this.weights[e]);total[cue]+=n;}});
+      for(let cue=0;cue<3;cue++)if(this.cues[cue].has(a)){loss[cue]+=n*(1-this.weights[e]);total[cue]+=n;}});
     return {neurons:this.n,plasticConnections:this.edges.length,changedConnections:changed,
       cueSynapticDepression:total[0]?loss[0]/total[0]:0,
       cueDepression:total.map((n,i)=>n?loss[i]/n:0),avoidance:this.avoidance,
