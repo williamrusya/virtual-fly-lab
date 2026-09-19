@@ -1,6 +1,6 @@
-import {createState,addFood,shock,advance,status,avoidsSugar,canAssociate,clearMemory,WIDTH,HEIGHT} from './model.js?v=5';
+import {createState,addFood,shock,advance,status,avoidsSugar,canAssociate,clearMemory,startChoice,availableFoods,WIDTH,HEIGHT} from './model.js?v=6';
 import {TasteCircuit} from './neural.js?v=3';
-import {MushroomBody} from './learning.js?v=5';
+import {MushroomBody} from './learning.js?v=6';
 const $=id=>document.getElementById(id);
 const canvas=$('arena'),ctx=canvas.getContext('2d');
 const flyImage=new Image();flyImage.src='assets/fly-walk.png?v=2';
@@ -26,16 +26,18 @@ function draw(){
     ctx.strokeStyle='#64847360';ctx.lineWidth=2;ctx.beginPath();
     trail.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.stroke();
   }
-  if(s.alive&&!avoidsSugar(s)&&s.foods.length&&s.time>=s.shockUntil){
-    const target=s.foods.reduce((best,f)=>Math.hypot(f.x-s.x,f.y-s.y)<Math.hypot(best.x-s.x,best.y-s.y)?f:best);
+  if(s.alive&&!avoidsSugar(s)&&availableFoods(s).length&&s.time>=s.shockUntil){
+    const target=availableFoods(s).reduce((best,f)=>Math.hypot(f.x-s.x,f.y-s.y)<Math.hypot(best.x-s.x,best.y-s.y)?f:best);
     ctx.strokeStyle='#44806380';ctx.lineWidth=1.5;ctx.setLineDash([5,7]);
     ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(target.x,target.y);ctx.stroke();ctx.setLineDash([]);
   }
   s.foods.forEach(f=>{
-    ctx.fillStyle='#ed9a4530';ctx.beginPath();ctx.arc(f.x,f.y,30,0,2*Math.PI);ctx.fill();
-    ctx.strokeStyle='#cb793a80';ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(f.x,f.y,30,0,2*Math.PI);ctx.stroke();ctx.setLineDash([]);
+    const empty=f.feeder&&s.time<f.readyAt;
+    ctx.fillStyle=f.cue===1?'#7189ed40':'#ed9a4540';ctx.beginPath();ctx.arc(f.x,f.y,40,0,2*Math.PI);ctx.fill();
+    ctx.strokeStyle=f.cue===1?'#4b64b9':'#b4652e';ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(f.x,f.y,40,0,2*Math.PI);ctx.stroke();ctx.setLineDash([]);
     if(sugarImage.complete&&sugarImage.naturalWidth)ctx.drawImage(sugarImage,f.x-32,f.y-32,64,64);
-    ctx.fillStyle='#425b50';ctx.font='bold 14px Manrope, sans-serif';ctx.fillText('САХАР',f.x,f.y+49);
+    ctx.fillStyle='#425b50';ctx.font='bold 16px Manrope, sans-serif';ctx.fillText(f.feeder?`САХАР ${f.cue===0?'A':'B'}`:'САХАР',f.x,f.y+57);
+    if(empty){ctx.fillStyle='#425b50';ctx.font='14px sans-serif';ctx.fillText(`Пополнение: ${Math.ceil(f.readyAt-s.time)} с`,f.x,f.y+77);}
   });
   if(s.time<s.shockUntil&&s.alive){
     ctx.strokeStyle='#d57940';ctx.lineWidth=2;ctx.beginPath();ctx.arc(s.x,s.y,58,0,2*Math.PI);ctx.stroke();
@@ -60,11 +62,26 @@ function refresh(){
   const memory=s.learning?.snapshot();
   $('memory').value=(memory?.cueSynapticDepression??0)*100;
   $('memory-value').textContent=`${Math.round((memory?.cueSynapticDepression??0)*100)}%`;
-  $('memory-note').textContent='Ослабление связей активируемых сахаром KC → MBON; память хранится в весах';
+  $('memory-b').value=(memory?.cueDepression?.[1]??0)*100;
+  $('memory-b-value').textContent=`${Math.round((memory?.cueDepression?.[1]??0)*100)}%`;
+  $('memory-note').textContent='Сигнал A (и сахар в свободном режиме)';
+  const testing=s.choiceMode&&s.choicePhase==='test';
+  $('choice-phase').textContent=s.choiceMode?(testing?'Проверка · ток и пластичность отключены':'Наблюдение / обучение'):'Свободный режим';
+  $('active-cue').textContent=s.activeCue===null?'Нет сигнала рядом':`Активен сигнал ${s.activeCue===0?'A':'B'}`;
+  $('place-pair').disabled=!neuralData||!s.alive||s.paused;
+  $('test-choice').disabled=!neuralData||!s.alive||s.paused||!s.choiceMode;
+  $('swap-choice').disabled=!neuralData||!s.alive||s.paused;
+  const maxVisits=Math.max(1,...s.visits.training,...s.visits.test);
+  for(const phase of ['training','test'])for(let cue=0;cue<2;cue++){
+    const id=`visits-${phase}-${cue}`;$(id).max=maxVisits;$(id).value=s.visits[phase][cue];
+    $(id+'-value').textContent=s.visits[phase][cue];
+  }
+  const total=s.visits.test[0]+s.visits.test[1];
+  $('choice-summary').textContent=total?`В проверке: ${total} посещений; A — ${Math.round(s.visits.test[0]/total*100)}%, B — ${Math.round(s.visits.test[1]/total*100)}%. Это доли посещений одной модели, не вероятности.`:'В проверке пока нет посещений. Отсутствие посещений тоже возможно; проценты не рассчитываются.';
   $('pairing-note').textContent=!s.alive?'Опыт завершён':s.paused?'Опыт на паузе':canAssociate(s)?'Активен след KC: импульс PPL1 может изменить синапсы':'Предложи сахар и подай слабый импульс при приближении или контакте';
-  $('clear-memory').disabled=!neuralData||!s.alive||s.paused||!memory?.changedConnections;
-  $('freeze-plasticity').disabled=!neuralData||!s.alive||s.paused;
-  $('silence-dan').disabled=!neuralData||!s.alive||s.paused;
+  $('clear-memory').disabled=!neuralData||!s.alive||s.paused||testing||!memory?.changedConnections;
+  $('freeze-plasticity').disabled=!neuralData||!s.alive||s.paused||testing;
+  $('silence-dan').disabled=!neuralData||!s.alive||s.paused||testing;
   $('kc-activity').textContent=memory?.activeKCs??0;
   $('dan-activity').textContent=(memory?.dopamineActivity??0).toFixed(2);
   $('mbon-activity').textContent=(memory?.outputActivity??0).toFixed(2);
@@ -77,13 +94,13 @@ function refresh(){
   }
   $('condition').textContent=!s.alive?'Погибла':s.health<30?'Критическое':s.stress>70?'Стресс':s.pleasure>55?'Довольна':'В норме';
   $('stress-note').textContent=!s.alive?'Опыт завершён':s.stress>70?'Сильный стресс снижает здоровье':s.stress>30?'Постепенно успокаивается':'Спокойное состояние';
-  $('feed').disabled=!neuralData||!s.alive||s.paused||s.foods.length>=5;
-  $('shock').disabled=!neuralData||!s.alive||s.paused||s.cooldown>0;
+  $('feed').disabled=!neuralData||!s.alive||s.paused||s.choiceMode||s.foods.length>=5;
+  $('shock').disabled=!neuralData||!s.alive||s.paused||testing||s.cooldown>0;
   $('intensity').disabled=!s.alive||s.paused;
   $('pause').disabled=!neuralData||!s.alive;$('pause').textContent=s.paused?'▶ Продолжить':'Ⅱ Пауза';
   $('pause').setAttribute('aria-pressed',String(s.paused));
   $('end-overlay').hidden=s.alive;
-  $('arena-hint').textContent=!s.alive?'':s.paused?'Опыт на паузе':s.foods.length>=5?'На арене уже 5 порций сахара':'Нажми на арену, чтобы положить сахар';
+  $('arena-hint').textContent=!s.alive?'':s.paused?'Опыт на паузе':s.choiceMode?'Кормушки A/B пополняются через 8 секунд':s.foods.length>=5?'На арене уже 5 порций сахара':'Нажми на арену, чтобы положить сахар';
   document.querySelector('.chamber').classList.toggle('paused',s.paused);
   $('silence-mn9').disabled=!neuralData||!s.alive;
   $('neural-state').textContent=neuralError?'Ошибка загрузки. Обнови страницу.':!neuralData?'Загрузка данных…':s.brain.silenced?'Выход MN9 отключён':s.tasting?'Сахар активирует входные нейроны':'Ожидает контакта с сахаром';
@@ -103,11 +120,14 @@ function refresh(){
     }));$('event-count').textContent=`${String(s.events.length).padStart(2,'0')} В ЖУРНАЛЕ`;
   }
 }
-function reset(){s=createState(neuralData?new TasteCircuit(neuralData):null,learningData?new MushroomBody(learningData):null);$('silence-mn9').checked=false;$('freeze-plasticity').checked=false;$('silence-dan').checked=false;last=null;trail=[];eventsSignature='';refresh();draw();}
+function reset(){s=createState(neuralData?new TasteCircuit(neuralData):null,learningData?new MushroomBody(learningData):null);$('silence-mn9').checked=false;$('freeze-plasticity').checked=false;$('silence-dan').checked=false;$('swap-choice').checked=false;last=null;trail=[];eventsSignature='';refresh();draw();}
 function feed(x=s.x+Math.cos(s.angle)*190,y=s.y+Math.sin(s.angle)*190){if(!neuralData)return false;const ok=addFood(s,x,y);refresh();draw();return ok;}
 function applyShock(){const ok=shock(s,power);refresh();draw();return ok;}
 $('feed').addEventListener('click',()=>feed());
 $('shock').addEventListener('click',applyShock);
+function beginChoice(test){if(!neuralData)return;startChoice(s,test,test&&$('swap-choice').checked);trail=[];last=null;refresh();draw();}
+$('place-pair').addEventListener('click',()=>beginChoice(false));
+$('test-choice').addEventListener('click',()=>beginChoice(true));
 $('intensity').addEventListener('input',e=>{
   power=Number(e.target.value);const label=['','Слабый','Средний','Сильный'][power];
   $('intensity-value').textContent=label;$('intensity').setAttribute('aria-valuetext',label);
@@ -144,7 +164,7 @@ Promise.all(['data/taste-circuit.json?v=3','data/learning-circuit.json?v=5'].map
 const context=document.modelContext;
 if(context?.registerTool){
   const lifecycle=new AbortController();
-  const snapshot=()=>({alive:s.alive,paused:s.paused,pleasure:s.pleasure,stress:s.stress,health:s.health,foodPortions:s.foods.length,learning:s.learning?.snapshot()??null,avoidsSugar:avoidsSugar(s),status:status(s),neural:s.brain?.snapshot()??null});
+  const snapshot=()=>({alive:s.alive,paused:s.paused,pleasure:s.pleasure,stress:s.stress,health:s.health,foodPortions:s.foods.length,choiceMode:s.choiceMode,choicePhase:s.choicePhase,visits:s.visits,activeCue:s.activeCue,learning:s.learning?.snapshot()??null,avoidsSugar:avoidsSugar(s),status:status(s),neural:s.brain?.snapshot()??null});
   const register=tool=>{try{Promise.resolve(context.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}};
   register({name:'read_fly_state',description:'Read the current fictional fly state.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute:()=>snapshot()});
   register({name:'apply_fly_action',description:'Add food, apply a fictional shock, pause, resume, or reset the experiment.',inputSchema:{type:'object',properties:{action:{type:'string',enum:['food','shock','pause','resume','reset']},power:{type:'integer',minimum:1,maximum:3}},required:['action'],additionalProperties:false},annotations:{readOnlyHint:false},execute:input=>{

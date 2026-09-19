@@ -55,4 +55,15 @@ test('actual app loop updates both clock and visible sprite; feed control leads 
   for(let i=0;i<120;i++){now+=1000/60;callback(now);}
   assert.equal(element('memory-value').textContent,'0%');
   assert.equal(element('changed-synapses').textContent,0);
+  element('place-pair').listeners.click();
+  assert.equal(element('feed').disabled,true);assert.equal(element('test-choice').disabled,false);
+  element('test-choice').listeners.click();
+  assert.equal(element('shock').disabled,true);
+  assert.match(element('choice-phase').textContent,/Проверка/);
+  assert.match(element('choice-summary').textContent,/нет посещений/);
+  for(let i=0;i<600;i++){now+=1000/60;callback(now);}
+  assert.ok(Number(element('visits-test-0-value').textContent)+Number(element('visits-test-1-value').textContent)>0);
+  element('reset').listeners.click();
+  assert.equal(element('choice-phase').textContent,'Свободный режим');
+  assert.equal(element('visits-test-0-value').textContent,0);
 });

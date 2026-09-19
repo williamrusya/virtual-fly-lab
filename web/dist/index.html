@@ -6,10 +6,10 @@
   <title>Virtual Fly Lab — живая лаборатория</title>
   <meta name="description" content="Наблюдайте за виртуальной мухой: давайте еду, меняйте стимулы и следите за удовольствием, стрессом и здоровьем.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%2310191c'/%3E%3Ctext x='7' y='29' font-size='26' fill='%239ee5d1'%3EF%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
-  <header class="topbar"><a class="brand" href="./"><span class="brand-mark">F<span>↗</span></span><span>Virtual Fly <b>Lab</b><small>ИНТЕРАКТИВНАЯ ЛАБОРАТОРИЯ</small></span></a><span class="model-badge">FlyWire · две цепи <span>v0.5</span></span></header>
+  <header class="topbar"><a class="brand" href="./"><span class="brand-mark">F<span>↗</span></span><span>Virtual Fly <b>Lab</b><small>ИНТЕРАКТИВНАЯ ЛАБОРАТОРИЯ</small></span></a><span class="model-badge">FlyWire · две цепи <span>v0.6</span></span></header>
   <main>
     <div class="heading"><div><div class="eyebrow">ЭКСПЕРИМЕНТ / 001</div><h1>Муха под наблюдением</h1></div><p>Еда, удовольствие и стресс.<br class="desktop"> Как меняется её поведение?</p></div>
     <div class="workspace">
@@ -34,11 +34,31 @@
         </div><button id="reset" class="reset-button">↻ Начать заново</button>
       </aside>
     </div>
+    <section class="choice-panel learning-panel" aria-label="Выбор между кормушками A и B">
+      <div class="eyebrow">ДВЕ КОРМУШКИ · ДВА УСЛОВНЫХ СИГНАЛА</div>
+      <h2>Какой сахар выбирает муха?</h2>
+      <p>Обе кормушки содержат одинаковый сахар. Сигналы A и B активируют разные группы по 90 KC. Обучай возле A, затем проверь выбор без тока. Можно обучать и возле B — безопасный вариант не задан заранее.</p>
+      <div class="choice-actions"><button id="place-pair" class="quiet">Установить кормушки A + B</button><button id="test-choice" class="quiet">Проверить без тока</button></div>
+      <label class="neural-switch"><input type="checkbox" id="swap-choice"> Поменять A и B местами при проверке</label>
+      <p><strong id="choice-phase">Свободный режим</strong> · <span id="active-cue">Нет сигнала рядом</span></p>
+      <div class="choice-chart" aria-label="Количество посещений кормушек">
+        <div><h3>Наблюдение / обучение</h3>
+          <div class="choice-bar cue-a"><label for="visits-training-0">A</label><progress id="visits-training-0" max="1" value="0"></progress><output id="visits-training-0-value">0</output></div>
+          <div class="choice-bar cue-b"><label for="visits-training-1">B</label><progress id="visits-training-1" max="1" value="0"></progress><output id="visits-training-1-value">0</output></div>
+        </div><div><h3>Проверка без тока</h3>
+          <div class="choice-bar cue-a"><label for="visits-test-0">A</label><progress id="visits-test-0" max="1" value="0"></progress><output id="visits-test-0-value">0</output></div>
+          <div class="choice-bar cue-b"><label for="visits-test-1">B</label><progress id="visits-test-1" max="1" value="0"></progress><output id="visits-test-1-value">0</output></div>
+        </div>
+      </div>
+      <p id="choice-summary">В проверке пока нет посещений.</p>
+      <details><summary>Как считается выбор и что сохраняется?</summary><p>Посещение — вход в круг 40 единиц вокруг доступной кормушки. Повторный вход считается только после выхода дальше 65 единиц. Посещение не обязательно означает поедание. После поедания кормушка пополняется через 8 секунд.</p><p>Установка кормушек заменяет свободный сахар и очищает график, сохраняя веса, здоровье и стресс. Проверка возвращает муху в центр, пополняет кормушки и очищает только её счётчики. Ток и пластичность выключены; следы недавней активности модуля обучения очищаются. Переключение сторон переносит сигналы вместе с кормушками. «Начать заново» возвращает свободный режим и сбрасывает весь опыт.</p><p>Это наблюдения одной детерминированной модели. Начальное положение, геометрия и продолжительность этапов влияют на посещения. Разница столбцов сама по себе не доказывает обучение. Раздельные сигналы KC синтетические; реальные сенсорные пути не восстановлены.</p></details>
+    </section>
     <section class="learning-panel" aria-label="Синаптическое обучение в модели грибовидного тела">
       <div class="eyebrow">FLYWIRE · 910 НЕЙРОНОВ · МОДЕЛЬ ПЛАСТИЧНОСТИ</div>
       <h2>Память в синапсах KC → MBON</h2>
       <p>905 клеток Кеньона (KC), 2 нейрона подкрепления PPL1 и 3 выходных нейрона MBON. Анатомические связи взяты из FlyWire; 2 575 соединений KC → MBON могут изменять свою эффективность при обучении.</p>
-      <div class="metric memory"><div><label for="memory">Ослабление связей сигнала сахара</label><output id="memory-value">0%</output></div><progress id="memory" max="100" value="0"></progress><small id="memory-note">Память хранится в синаптических весах</small></div>
+      <div class="metric memory"><div><label for="memory">Ослабление связей сигнала A</label><output id="memory-value">0%</output></div><progress id="memory" max="100" value="0"></progress><small id="memory-note">Память хранится в синаптических весах</small></div>
+      <div class="metric memory"><div><label for="memory-b">Ослабление связей сигнала B</label><output id="memory-b-value">0%</output></div><progress id="memory-b" max="100" value="0"></progress><small>Независимый условный сигнал; тот же сахар</small></div>
       <div class="learning-stages">
         <div><small>АКТИВНЫЕ KC</small><strong id="kc-activity">0</strong><span>из 905 клеток</span></div>
         <div><small>АКТИВНОСТЬ PPL1</small><strong id="dan-activity">0.00</strong><span>сигнал подкрепления, отн. ед.</span></div>
@@ -46,7 +66,7 @@
         <div><small>ИЗМЕНЁННЫЕ СОЕДИНЕНИЯ</small><strong id="changed-synapses">0</strong><span>из 2 575 связей KC → MBON</span></div>
       </div>
       <p id="pairing-note" role="status">Предложи сахар и подай слабый импульс при приближении или контакте</p>
-      <p>Дай сахар → дождись приближения мухи → подай слабый импульс → предложи новую порцию. При снижении ответа MBON на 35% модель начинает избегать сахара. Веса сохраняются до сброса или перезагрузки страницы.</p>
+      <p>Дай сахар → дождись приближения мухи → подай слабый импульс → предложи новую порцию. При снижении ответа MBON на 35% модель начинает избегать соответствующего сигнала. Веса сохраняются до сброса или перезагрузки страницы.</p>
       <div class="learning-controls">
         <label class="neural-switch"><input type="checkbox" id="freeze-plasticity"> Заблокировать изменение весов</label>
         <label class="neural-switch"><input type="checkbox" id="silence-dan"> Отключить PPL1 — убрать сигнал подкрепления</label>
@@ -55,7 +75,7 @@
       <button id="clear-memory" class="quiet">Восстановить исходные веса</button>
       <details><summary>Что здесь биологическое, а что принято в модели?</summary>
         <p>Реальные идентификаторы, типы нейронов и число синапсов: FlyWire v630. Выбраны левые модули α2/α3. Используются частотные модели нейронов и дофамин-зависимое ослабление KC → MBON. Это биологически мотивированный механизм, но параметры не подогнаны к опытам на живых мухах.</p>
-        <p>Близкий сахар условно активирует фиксированные 90 клеток Кеньона; реальный путь от органов чувств к ним не восстановлен. Кнопка тока условно стимулирует PPL1. Исследование вкусовой памяти использовало горькое подкрепление и активацию PPL1, а не этот виртуальный протокол. Перевод ответа MBON в избегание — наше допущение.</p>
+        <p>Каждый из сигналов A и B условно активирует свою непересекающуюся группу из 90 клеток Кеньона; реальный путь от органов чувств к ним не восстановлен. Кнопка тока условно стимулирует PPL1. Исследование вкусовой памяти использовало горькое подкрепление и активацию PPL1, а не этот виртуальный протокол. Перевод ответа MBON в избегание — наше допущение.</p>
         <p>«Без пластичности» — вычислительный контроль с исходными весами, не измерение живой мухи. Сброс восстанавливает веса и очищает текущую активность модуля памяти, сохраняя здоровье, стресс и вкусовую цепь.</p>
         <p><a href="https://pubmed.ncbi.nlm.nih.gov/25981787/" target="_blank" rel="noreferrer">Вкусовая память ↗</a> · <a href="https://elifesciences.org/articles/62576" target="_blank" rel="noreferrer">Организация грибовидного тела ↗</a> · <a href="data/LEARNING-NOTES.txt" target="_blank" rel="noreferrer">Формулы, допущения и источники ↗</a> · <a href="data/learning-circuit.json" target="_blank" rel="noreferrer">Нейроны и связи ↗</a></p>
       </details>
@@ -73,5 +93,5 @@
     <section class="journal" aria-label="Журнал событий"><div class="journal-title"><h2>Ход опыта</h2><span id="event-count">01 СОБЫТИЕ</span></div><ol id="events" aria-live="polite" aria-relevant="additions"></ol></section>
     <footer><span class="note-icon">i</span><p><strong>Экспериментальная модель, не цифровая копия мозга.</strong> Цепь вкуса использует реальные связи FlyWire и расчётные импульсы. Обучение использует отдельную модель пластичности; движение, стресс и здоровье условны. Изображение — NeuroMechFly; движение в браузере не рассчитывается в MuJoCo.</p><a href="https://neuromechfly.org/" target="_blank" rel="noreferrer">О NeuroMechFly ↗</a></footer>
   </main>
-  <script type="module" src="app.js?v=5"></script>
+  <script type="module" src="app.js?v=6"></script>
 </body></html>

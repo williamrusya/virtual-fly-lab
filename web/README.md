@@ -6,6 +6,35 @@ Run `node server.js`, then open http://127.0.0.1:5173. Run checks with
 
 ## Controls
 
+### Two feeders and visit chart (v0.6)
+
+Use "Установить кормушки A + B" to replace loose sugar with two persistent
+feeders at (220,310) and (680,310). Both offer identical sugar. A drives cue 0
+and B drives cue 1: distinct synthetic ensembles of 90 KCs in the same learning
+network. Punish near either feeder; no cue is preassigned safe or dangerous.
+The two memory bars report depression separately for the A and B connections.
+
+"Проверить без тока" recenters the fly, refills feeders and starts a new test
+count. It preserves weights, health and stress, clears learning activity/traces
+and pending reinforcement, and blocks shocks and plasticity during the test.
+The side-swap checkbox moves the cue identity with its feeder. Repeating the
+test clears its previous counts; installing the pair clears both chart phases
+but preserves weights. Full reset returns to loose-sugar mode and clears all.
+
+The chart counts entries within 40 arena units of an available feeder, with a
+65-unit exit requirement before recounting. Visits are not ingestion events.
+After eating, a feeder is unavailable for 8 simulated seconds, then refills.
+The goal selector maintains its selected feeder and switches to the other cue
+if the current sensory response indicates learned avoidance. This motor decision
+rule is an application assumption. It does not directly inspect synaptic weights.
+
+Bars have a shared count scale. Percentages refer to test visits only, with no
+percentage shown for zero visits. These are observations of one deterministic
+model, not independent biological trials or estimated probabilities. Phase
+durations, geometry, tie-breaking, health, stress and refill timing affect counts.
+Tests cover naive visits to both, learning either cue, swapping sides, exact
+weight preservation during tests, hysteresis, reset and UI control behavior.
+
 Add food with the button or by clicking/tapping the arena (up to five portions).
 The fly approaches and eats it. Choose one of three pulse strengths, then apply
 a fictional electric shock. Pause/resume or reset the experiment at any time.

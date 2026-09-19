@@ -1,4 +1,4 @@
-Virtual Fly Lab v0.5 — connectome-constrained synaptic learning
+Virtual Fly Lab v0.6 — connectome-constrained synaptic learning and A/B choice
 
 WHAT IS IMPLEMENTED
 An additional, deliberately reduced rate-neuron model of the left mushroom-body
@@ -43,11 +43,12 @@ depression rule in both compartments; biological differences and stages of
 short-/long-term consolidation are not reproduced.
 
 SENSORY AND REINFORCEMENT ENCODING — EXPLICIT ASSUMPTIONS
-The arena presents cue 0 whenever the nearest sugar is within 180 canvas units,
+The arena presents the cue of the nearest available sugar within 180 canvas units,
 including during escape. This is an abstract recognition signal, NOT a claim
 that sugar has an odor or that a verified taste/vision pathway was reconstructed.
 Sort KC IDs by 32-bit FNV-1a hash and activate the first 10% (90 cells) for cue 0.
-The next 90 cells encode a disjoint diagnostic cue 1 used in software tests.
+The next 90 cells encode disjoint cue 1. In A/B mode feeder A presents cue 0
+and feeder B presents cue 1. Loose sugar in the original mode presents cue 0.
 These ensembles are synthetic, not experimentally identified sugar-responsive
 KCs. Their disjointness makes the cue-specificity control deliberately simple.
 Shock drives BOTH selected PPL1 neurons directly for 0.4 s at a target normalized
@@ -71,7 +72,7 @@ MBON drive is sum_i(c_ij*q_ij*r_i) / sum_{i in cue0}(c_ij).
 This count-based normalization sets the naive cue-0 steady response to 1.
 Counterfactual reference output uses the same KC rates and MBON dynamics with
 all q=1; it is an analysis instrument, not a second anatomical neuron population.
-The displayed memory percentage is count-weighted depression of cue-0 edges.
+The two memory percentages are count-weighted depression of cue-0 and cue-1 edges.
 The changed-edge counter uses q<0.999. Neither display controls behavior.
 
 BEHAVIORAL DECODER — EXPLICIT ASSUMPTION
@@ -94,6 +95,25 @@ Silencing PPL1 clamps the selected DAN rates to zero; old memory remains.
 Restoring weights sets q=1 and clears rates, traces and reinforcement in the
 learning module. Health, stress and the original taste circuit remain intact.
 Full experiment reset restores all state and disables the two control blocks.
+
+TWO-FEEDER ASSAY (APPLICATION PROTOCOL)
+Both feeders provide identical sugar, at (220,310) and (680,310). A/B label
+different synthetic KC ensembles, not measured odors or visual pathways.
+Only the nearest available source is encoded; there is no mixture encoding.
+Eating makes that feeder unavailable for 8 seconds. The motor controller
+commits to a feeder until depletion or avoidance; upon avoidance it selects
+the other cue if available. This explicit motor rule is not inferred anatomy.
+Starting a test returns the fly to (450,310), angle -pi/2, refills feeders,
+clears learning rates/traces/pending reinforcement but preserves synaptic weights,
+health, stress and taste-circuit state. Shocks and plasticity are blocked in
+test mode. Optional side swapping moves cue identity along with the feeder.
+Each visit is entry within 40 units of an available feeder, counted again only
+after exiting beyond 65 units. Visits are distinct from consumption. Counts
+are kept separately for observation/training and test. A repeated test replaces
+its counters; reinstalling the pair clears both phases but preserves weights.
+Bars share a scale and zero-visit phases have no percentage. Unequal duration,
+position, heading, refill delays and physiological game state affect counts.
+The software checks are not statistical evidence from independent animals.
 
 VALIDATION AND LIMITS
 Automated tests cover exact graph counts/types, compartment matching, paired

@@ -2,6 +2,10 @@
 
 [Open the browser experiment](https://williamrusya.github.io/virtual-fly-lab/)
 
+Version 0.6 adds A/B sugar feeders, cue-specific memory bars, a visit chart and
+a test phase with shocks/plasticity disabled. Swap feeder sides to probe cue
+identity versus location. Counts describe this model, not measured fly behavior.
+
 The browser version includes a reduced taste circuit: 447 simulated neurons and
 24,403 directed connections from FlyWire v630, adapted from Shiu et al. (2024).
 This circuit gates feeding at sugar contact; walking, attraction, pleasure,

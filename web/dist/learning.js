@@ -30,7 +30,10 @@ export class MushroomBody {
     this.pulsePower=1+(power-1)*.5;this.pulseRemaining=this.p.reinforcement_duration_s;
   }
   clearMemory(){
-    this.weights.fill(1);this.trace.fill(0);this.rates.fill(0);this.reference.fill(0);
+    this.weights.fill(1);this.clearActivity();
+  }
+  clearActivity(){
+    this.trace.fill(0);this.rates.fill(0);this.reference.fill(0);
     this.pulseRemaining=0;this.pulsePower=0;this.avoidance=0;this.pending=0;
   }
   advance(seconds,cue=null){
@@ -70,11 +73,12 @@ export class MushroomBody {
     }
   }
   snapshot(){
-    let changed=0,loss=0,total=0;
+    let changed=0;const loss=[0,0],total=[0,0];
     this.edges.forEach(([a,,n],e)=>{if(this.weights[e]<.999)changed++;
-      if(this.cues[0].has(a)){loss+=n*(1-this.weights[e]);total+=n;}});
+      for(let cue=0;cue<2;cue++)if(this.cues[cue].has(a)){loss[cue]+=n*(1-this.weights[e]);total[cue]+=n;}});
     return {neurons:this.n,plasticConnections:this.edges.length,changedConnections:changed,
-      cueSynapticDepression:total?loss/total:0,avoidance:this.avoidance,
+      cueSynapticDepression:total[0]?loss[0]/total[0]:0,
+      cueDepression:total.map((n,i)=>n?loss[i]/n:0),avoidance:this.avoidance,
       activeKCs:this.kcs.filter(i=>this.rates[i]>.1).length,
       eligibility:Math.max(...this.kcs.map(i=>this.trace[i])),
       dopamineActivity:mean(this.dans.map(i=>this.rates[i])),
